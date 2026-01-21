@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install Go dependencies
+        run: go mod download
+
+      - name: Install golang migrate (with SQLite support)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sqlite3
+          go install -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+          migrate -version
+
+      - name: Run database migrations (SQLite)
+        run: |
+          mkdir -p /tmp/db
+          migrate -path ./internal/db/migrations -database "sqlite3:///tmp/db/ci_test.db" up
+
+      - name: Run Go tests
+        env:
+          DB_PATH: /tmp/db/ci_test.db
+        run: go test ./... -v
+
+      - name: Build backend binary
+        run: go build ./cmd/main.go
