@@ -65,3 +65,18 @@ jobs:
           PUBLIC_API_URL: http://localhost:8080
         run: npm run build
 
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend container
+        run: |
+          cd backend
+          podman build -t nerdy-lm-backend .
+
+      - name: Build frontend container
+        run:  |
+          cd frontend
+          podman build --build-arg PUBLIC_API_URL=http://localhost:8080 -t nerdy-lm-frontend .
+

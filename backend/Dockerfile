@@ -31,7 +31,6 @@ COPY internal/db/migrations ./migrations
 
 # Create data directory for SQLite
 RUN mkdir -p /data
-COPY data/* /data
 
 # Environment defaults
 ENV DB_PATH=/data/nerdy_link_manager.db
