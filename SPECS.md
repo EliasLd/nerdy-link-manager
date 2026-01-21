@@ -223,14 +223,14 @@ There will be three main tables
 frontend/
 ├── src/
 │ ├── routes/
-│ │ ├── layout.svelte
-│ │ ├── layout.ts
-│ │ ├── page.svelte # Landing / Login
+│ │ ├── +layout.svelte
+│ │ ├── +layout.ts
+│ │ ├── +page.svelte # Landing / Login
 │ │ ├── dashboard/
-│ │ │ ├── page.svelte # Link list view
-│ │ │ ├── page.ts
+│ │ │ ├── +page.svelte # Link list view
+│ │ │ ├── +page.ts
 │ │ │ ├── stats/
-│ │ │ └── page.svelte # Statistics page
+│ │ │ └── +page.svelte # Statistics page
 │ ├── lib/
 │ │ ├── components/
 │ │ │ ├── atoms/
