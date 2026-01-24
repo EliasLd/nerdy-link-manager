@@ -9,6 +9,7 @@ import (
 func DeployHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Println("[INFO] Illegal request received (not POST)")
 		return
 	}
 
