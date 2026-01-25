@@ -19,9 +19,17 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("[DEPLOY] Deployment request received")
+	expectedToken := os.Getenv("DEPLOY_TOKEN")
+	if r.Header.Get("X-Deploy-Token") != expectedToken {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		log.Println("[WARN] Deployment request with invalid token received")
+		return
+	}
+
+	log.Println("[DEPLOY] Deployment request received, triggering deployment script...")
 
 	// TODO: Call deployment script
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Nerdy link manager deployment triggered!"))
 }
