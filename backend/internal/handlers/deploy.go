@@ -4,6 +4,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
+
+	"github.com/EliasLd/nerdy-link-manager/internal/deploy"
 )
 
 func DeployHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +31,19 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("[DEPLOY] Deployment request received, triggering deployment script...")
 
-	// TODO: Call deployment script
+	var deployMutex sync.Mutex
+
+	go func() {
+		// Lock the deployment script to avoid simultaneous deployments
+		deployMutex.Lock()
+		defer deployMutex.Unlock()
+
+		if err := deploy.RunDeployment(); err != nil {
+			log.Printf("%v\n", err)
+		} else {
+			log.Println("[DEPLOY] Deployment completed successfully!")
+		}
+	}()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Nerdy link manager deployment triggered!"))
