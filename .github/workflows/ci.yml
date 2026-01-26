@@ -70,11 +70,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build backend container
-        run: |
-          cd backend
-          podman build -t nerdy-lm-backend .
-
       - name: Build frontend container
         run:  |
           cd frontend
