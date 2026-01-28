@@ -9,6 +9,8 @@ import (
 	"github.com/EliasLd/nerdy-link-manager/internal/deploy"
 )
 
+var deployMutex sync.Mutex
+
 func DeployHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -30,8 +32,6 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("[DEPLOY] Deployment request received, triggering deployment script...")
-
-	var deployMutex sync.Mutex
 
 	go func() {
 		// Lock the deployment script to avoid simultaneous deployments
