@@ -1,15 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"sync"
-
-	"github.com/EliasLd/nerdy-link-manager/internal/deploy"
+	"path/filepath"
+	"time"
 )
-
-var deployMutex sync.Mutex
 
 func DeployHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -33,18 +31,25 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("[DEPLOY] Deployment request received, triggering deployment script...")
 
-	go func() {
-		// Lock the deployment script to avoid simultaneous deployments
-		deployMutex.Lock()
-		defer deployMutex.Unlock()
+	triggerDir := os.Getenv("DEPLOY_TRIGGER_DIR")
+	if triggerDir == "" {
+		triggerDir = "/deploy-trigger"
+	}
 
-		if err := deploy.RunDeployment(); err != nil {
-			log.Printf("%v\n", err)
-		} else {
-			log.Println("[DEPLOY] Deployment completed successfully!")
-		}
-	}()
+	if err := os.MkdirAll(triggerDir, 0755); err != nil {
+		log.Printf("[DEPLOY][ERROR] Could not create trigger dir: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
+	triggerFile := filepath.Join(triggerDir, fmt.Sprintf("trigger-%d", time.Now().UnixNano()))
+	if err := os.WriteFile(triggerFile, []byte{}, 0644); err != nil {
+		log.Printf("[DEPLOY][ERROR] Could not create trigger file: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[DEPLOY] Trigger file created: %s", triggerFile)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Nerdy link manager deployment triggered!"))
+	w.Write([]byte("Deployment trigger created"))
 }
