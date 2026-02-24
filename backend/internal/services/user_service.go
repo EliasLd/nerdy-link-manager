@@ -17,6 +17,25 @@ func NewUserService(repo repositories.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-// TODO: Implement these functions
-func (s *UserService) Register(ctx context.Context, email, password string) error
-func (s *UserService) Authenticate(ctx context.Context, email, password string) (*repositories.User, error)
+func (s *UserService) Register(ctx context.Context, email, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.Create(ctx, email, string(hash))
+}
+
+func (s *UserService) Authenticate(ctx context.Context, email, password string) (*repositories.User, error) {
+	user, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	return user, nil
+}

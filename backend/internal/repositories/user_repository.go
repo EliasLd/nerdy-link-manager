@@ -26,7 +26,6 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &sqliteUserRepository{db: db}
 }
 
-// TODO: Implement each function
 func (r *sqliteUserRepository) Create(ctx context.Context, email, passwordHash string) error {
 	query := `
 		INSERT INTO users(email, password_hash)
