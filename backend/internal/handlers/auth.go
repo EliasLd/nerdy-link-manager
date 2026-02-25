@@ -9,14 +9,14 @@ import (
 )
 
 type AuthHandler struct {
-	userSerive *services.UserService
-	jwtManager *auth.JWTManager
+	userService *services.UserService
+	jwtManager  *auth.JWTManager
 }
 
 func NewAuthHandler(us *services.UserService, jm *auth.JWTManager) *AuthHandler {
 	return &AuthHandler{
-		userSerive: us,
-		jwtManager: jm,
+		userService: us,
+		jwtManager:  jm,
 	}
 }
 
@@ -32,9 +32,36 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.userSerive.Register(r.Context(), req.Email, req.Password)
+	err := h.userService.Register(r.Context(), req.Email, req.Password)
 	if err != nil {
 		http.Error(w, "could not register", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req authRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.userService.Authenticate(r.Context(), req.Email, req.Password)
+	if err != nil {
+		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := h.jwtManager.Generate(user.ID, user.Email)
+	if err != nil {
+		http.Error(w, "could not generate token", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"token": token,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
