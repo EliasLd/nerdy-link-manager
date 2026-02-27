@@ -3,10 +3,16 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/EliasLd/nerdy-link-manager/config"
+	"github.com/EliasLd/nerdy-link-manager/internal/auth"
 	"github.com/EliasLd/nerdy-link-manager/internal/db"
+	"github.com/EliasLd/nerdy-link-manager/internal/handlers"
+	"github.com/EliasLd/nerdy-link-manager/internal/middleware"
+	"github.com/EliasLd/nerdy-link-manager/internal/repositories"
 	"github.com/EliasLd/nerdy-link-manager/internal/router"
+	"github.com/EliasLd/nerdy-link-manager/internal/services"
 )
 
 func main() {
@@ -18,7 +24,15 @@ func main() {
 	}
 	defer database.DB.Close()
 
-	r := router.New()
+	userRepo := repositories.NewUserRepository(database.DB)
+	userService := services.NewUserService(userRepo)
+
+	jwtManager := auth.NewJWTManager(cfg.JWTSecret, time.Hour*3600)
+
+	authHandler := handlers.NewAuthHandler(userService, jwtManager)
+	authMiddleware := middleware.AuthMiddleware(*jwtManager)
+
+	r := router.New(authHandler, authMiddleware)
 
 	log.Println("[INFO] Starting server on port", cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))
