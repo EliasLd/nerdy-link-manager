@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -21,7 +22,7 @@ type LinkWithStats struct {
 
 type LinkRepository interface {
 	// CRUD operations
-	Create(ctx context.Context, title, url, string, description *string) (*Link, error)
+	Create(ctx context.Context, title, url string, description *string) (*Link, error)
 	FindByID(ctx context.Context, id int64) (*Link, error)
 	FindAll(ctx context.Context) ([]Link, error)
 	Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error)
@@ -32,3 +33,64 @@ type LinkRepository interface {
 	GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error)
 	GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error)
 }
+
+type sqliteLinkRepository struct {
+	db *sql.DB
+}
+
+func NewLinkRepository(db *sql.DB) LinkRepository {
+	return &sqliteLinkRepository{db: db}
+}
+
+// TODO: Implements CRUD operations
+func (r *sqliteLinkRepository) Create(ctx context.Context, title, url string, description *string) (*Link, error) {
+	query := `
+		INSERT INTO links(title, url, desccription)
+		VALUES (?, ?, ?)
+	`
+
+	result, err := r.db.ExecContext(ctx, query, title, url, description)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return r.FindByID(ctx, id)
+}
+
+func (r *sqliteLinkRepository) FindByID(ctx context.Context, id int64) (*Link, error) {
+	query := `
+		SELECT id, title, url, description, created_at, updated_at
+		FROM links
+		WHERE id = ?
+	`
+
+	row := r.db.QueryRowContext(ctx, query, id)
+
+	var link Link
+	var description sql.NullString
+
+	err := row.Scan(&link.ID, &link.Title, &link.URL, &description, &link.CreatedAt, &link.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	if description.Valid {
+		link.Description = &description.String
+	}
+
+	return &link, nil
+}
+
+func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error)
+func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error)
+func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error
+
+// TODO: Stats operations
+func (r *sqliteLinkRepository) RecordClick(ctx context.Context, linkID int64) error
+func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error)
+func (r *sqliteLinkRepository) GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error)
