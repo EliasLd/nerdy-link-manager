@@ -144,7 +144,53 @@ func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error {
 	return err
 }
 
-// TODO: Stats operations
-func (r *sqliteLinkRepository) RecordClick(ctx context.Context, linkID int64) error
-func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error)
+func (r *sqliteLinkRepository) RecordClick(ctx context.Context, linkID int64) error {
+	query := `
+		INSERT INTO link_clicks(link_id)
+		VALUES (?)
+	`
+
+	_, err := r.db.ExecContext(ctx, query, linkID)
+	return err
+}
+
+// Retrieves a link with its clicks data
+func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error) {
+	query := `
+		SELECT
+			l.id, l.title, l.url, l.description, l.created_at, l.updated_at,
+			COUNT(lc.id) as click_count
+		FROM links l
+		LEFT JOIN link_clicks lc ON l.id = lc.link_id
+		WHERE l.id = ?
+		GROUP BY l.id
+	`
+
+	row := r.db.QueryRowContext(ctx, query, linkID)
+
+	var linkStats LinkWithStats
+	var description sql.NullString
+
+	err := row.Scan(
+		&linkStats.ID,
+		&linkStats.Title,
+		&linkStats.URL,
+		&description,
+		&linkStats.CreatedAt,
+		&linkStats.UpdatedAt,
+		&linkStats.ClickCount,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if description.Valid {
+		linkStats.Description = &description.String
+	}
+
+	return &linkStats, nil
+
+}
+
 func (r *sqliteLinkRepository) GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error)
