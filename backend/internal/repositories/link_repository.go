@@ -42,7 +42,6 @@ func NewLinkRepository(db *sql.DB) LinkRepository {
 	return &sqliteLinkRepository{db: db}
 }
 
-// TODO: Implements CRUD operations
 func (r *sqliteLinkRepository) Create(ctx context.Context, title, url string, description *string) (*Link, error) {
 	query := `
 		INSERT INTO links(title, url, desccription)
@@ -72,6 +71,7 @@ func (r *sqliteLinkRepository) FindByID(ctx context.Context, id int64) (*Link, e
 	row := r.db.QueryRowContext(ctx, query, id)
 
 	var link Link
+	// Description field can be omitted
 	var description sql.NullString
 
 	err := row.Scan(&link.ID, &link.Title, &link.URL, &description, &link.CreatedAt, &link.UpdatedAt)
@@ -86,7 +86,42 @@ func (r *sqliteLinkRepository) FindByID(ctx context.Context, id int64) (*Link, e
 	return &link, nil
 }
 
-func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error)
+// Retrieves all links, sorted by creation date DESC
+func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error) {
+	query := `
+		SELECT id, title, url, description, created_at, updated_at
+		FROM links
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	links := []Link{}
+
+	for rows.Next() {
+		var link Link
+		// Description field can be omitted
+		var description sql.NullString
+
+		err := rows.Scan(&link.ID, &link.Title, &link.URL, &description, &link.CreatedAt, &link.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if description.Valid {
+			link.Description = &description.String
+		}
+
+		links = append(links, link)
+	}
+
+	return links, rows.Err()
+}
+
 func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error)
 func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error
 
