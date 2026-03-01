@@ -193,4 +193,50 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (
 
 }
 
-func (r *sqliteLinkRepository) GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error)
+// Retrieves all links with their data
+func (r *sqliteLinkRepository) GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error) {
+	query := `
+		SELECT
+			l.id, l.title, l.url, l.description, l.created_at, l.updated_at,
+			COUNT(lc.id) as click_count
+		FROM links l
+		LEFT JOIN link_clicks lc ON l.id = lc.link_id
+		GROUP BY l.id
+		ORDER BY l.created_at DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	links := []LinkWithStats{}
+
+	for rows.Next() {
+		var linkStats LinkWithStats
+		var description sql.NullString
+
+		err := rows.Scan(
+			&linkStats.ID,
+			&linkStats.Title,
+			&linkStats.URL,
+			&description,
+			&linkStats.CreatedAt,
+			&linkStats.UpdatedAt,
+			&linkStats.ClickCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if description.Valid {
+			linkStats.Description = &description.String
+		}
+
+		links = append(links, linkStats)
+	}
+
+	return links, rows.Err()
+}
