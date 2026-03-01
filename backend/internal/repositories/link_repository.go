@@ -122,8 +122,27 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error) {
 	return links, rows.Err()
 }
 
-func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error)
-func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error
+func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error) {
+	query := `
+		UPDATE links
+		SET title = ?, url = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`
+
+	_, err := r.db.ExecContext(ctx, query, title, url, description, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.FindByID(ctx, id)
+}
+
+// Deletes a link (Cascade deletes its clicks too)
+func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM links WHERE id = ?`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
 
 // TODO: Stats operations
 func (r *sqliteLinkRepository) RecordClick(ctx context.Context, linkID int64) error
