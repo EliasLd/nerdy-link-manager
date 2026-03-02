@@ -47,6 +47,14 @@ func (s *LinkService) CreateLink(ctx context.Context, title, rawURL string, desc
 	return s.repo.Create(ctx, title, rawURL, description)
 }
 
+func (s *LinkService) GetLink(ctx context.Context, id int64) (*repositories.Link, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
+func (s *LinkService) GetAllLinks(ctx context.Context) ([]repositories.Link, error) {
+	return s.repo.FindAll(ctx)
+}
+
 // Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
