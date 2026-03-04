@@ -77,6 +77,10 @@ func (s *LinkService) UpdateLink(ctx context.Context, id int64, title, rawURL st
 	return s.repo.Update(ctx, id, title, rawURL, description)
 }
 
+func (s *LinkService) DeleteLink(ctx context.Context, id int64) error {
+	return s.repo.Delete(ctx, id)
+}
+
 // Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
