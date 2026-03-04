@@ -25,7 +25,7 @@ type LinkRepository interface {
 	Create(ctx context.Context, title, url string, description *string) (*Link, error)
 	FindByID(ctx context.Context, id int64) (*Link, error)
 	FindAll(ctx context.Context) ([]Link, error)
-	Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error)
+	Update(ctx context.Context, id int64, title, url string, description *string) (*Link, error)
 	Delete(ctx context.Context, id int64) error
 
 	// Stats operations
@@ -122,7 +122,7 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error) {
 	return links, rows.Err()
 }
 
-func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url, string, description *string) (*Link, error) {
+func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url string, description *string) (*Link, error) {
 	query := `
 		UPDATE links
 		SET title = ?, url = ?, description = ?, updated_at = CURRENT_TIMESTAMP

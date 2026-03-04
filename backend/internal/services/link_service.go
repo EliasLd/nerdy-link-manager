@@ -55,6 +55,28 @@ func (s *LinkService) GetAllLinks(ctx context.Context) ([]repositories.Link, err
 	return s.repo.FindAll(ctx)
 }
 
+func (s *LinkService) UpdateLink(ctx context.Context, id int64, title, rawURL string, description *string) (*repositories.Link, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return nil, ErrEmptyTitle
+	}
+
+	if err := validateURL(rawURL); err != nil {
+		return nil, err
+	}
+
+	if description != nil {
+		trimmed := strings.TrimSpace(*description)
+		if trimmed == "" {
+			description = nil
+		} else {
+			description = &trimmed
+		}
+	}
+
+	return s.repo.Update(ctx, id, title, rawURL, description)
+}
+
 // Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
