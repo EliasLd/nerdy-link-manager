@@ -81,6 +81,15 @@ func (s *LinkService) DeleteLink(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *LinkService) TrackClick(ctx context.Context, linkID int64) error {
+	_, err := s.repo.FindByID(ctx, linkID)
+	if err != nil {
+		return ErrLinkNotFound
+	}
+
+	return s.repo.RecordClick(ctx, linkID)
+}
+
 // Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
