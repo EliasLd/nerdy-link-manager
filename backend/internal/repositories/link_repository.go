@@ -31,7 +31,7 @@ type LinkRepository interface {
 	// Stats operations
 	RecordClick(ctx context.Context, linkID int64) error
 	GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error)
-	GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error)
+	GetAllLinksWithStats(ctx context.Context) ([]LinkWithStats, error)
 }
 
 type sqliteLinkRepository struct {
@@ -194,7 +194,7 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (
 }
 
 // Retrieves all links with their data
-func (r *sqliteLinkRepository) GetAllLinkWithStats(ctx context.Context) ([]LinkWithStats, error) {
+func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context) ([]LinkWithStats, error) {
 	query := `
 		SELECT
 			l.id, l.title, l.url, l.description, l.created_at, l.updated_at,

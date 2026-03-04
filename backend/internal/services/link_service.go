@@ -90,6 +90,14 @@ func (s *LinkService) TrackClick(ctx context.Context, linkID int64) error {
 	return s.repo.RecordClick(ctx, linkID)
 }
 
+func (s *LinkService) GetLinkWithStats(ctx context.Context, linkID int64) (*repositories.LinkWithStats, error) {
+	return s.repo.GetLinkStats(ctx, linkID)
+}
+
+func (s *LinkService) GetAllLinksWithStats(ctx context.Context) ([]repositories.LinkWithStats, error) {
+	return s.repo.GetAllLinksWithStats(ctx)
+}
+
 // Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
