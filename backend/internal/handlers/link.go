@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/EliasLd/nerdy-link-manager/internal/services"
 )
@@ -61,6 +64,52 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 		respondJSON(w, http.StatusOK, links)
 	} else {
 	}
+}
+
+func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
+	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
+		return
+	}
+
+	includeStats := r.URL.Query().Get("stats") == "true"
+
+	if includeStats {
+		link, err := h.service.GetLinkWithStats(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
+				return
+			}
+			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch link"})
+			return
+		}
+		respondJSON(w, http.StatusOK, link)
+	} else {
+		link, err := h.service.GetLink(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
+				return
+			}
+			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch link"})
+			return
+		}
+		respondJSON(w, http.StatusOK, link)
+	}
+}
+
+// Extracts numerical id from a path, like /links/123
+func extractIDFromPath(path, prefix string) (int64, error) {
+	// Remove prefix and clean path
+	idStr := strings.TrimPrefix(path, prefix)
+	idStr = strings.TrimSuffix(idStr, "/click")
+	idStr = strings.TrimSuffix(idStr, "/")
+
+	// Parse id to int64
+	return strconv.ParseInt(idStr, 10, 64)
+
 }
 
 // Encodes a response in JSON with the appropriate status
