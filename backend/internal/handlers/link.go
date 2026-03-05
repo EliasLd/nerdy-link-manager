@@ -48,6 +48,21 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, link)
 }
 
+func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
+	// Optional query param: ?stats=true to include links statistics
+	includeStats := r.URL.Query().Get("stats") == "true"
+
+	if includeStats {
+		links, err := h.service.GetAllLinks(r.Context())
+		if err != nil {
+			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
+			return
+		}
+		respondJSON(w, http.StatusOK, links)
+	} else {
+	}
+}
+
 // Encodes a response in JSON with the appropriate status
 func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
