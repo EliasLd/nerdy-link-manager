@@ -44,7 +44,7 @@ func NewLinkRepository(db *sql.DB) LinkRepository {
 
 func (r *sqliteLinkRepository) Create(ctx context.Context, title, url string, description *string) (*Link, error) {
 	query := `
-		INSERT INTO links(title, url, desccription)
+		INSERT INTO links(title, url, description)
 		VALUES (?, ?, ?)
 	`
 
