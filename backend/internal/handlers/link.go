@@ -126,6 +126,48 @@ func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, link)
 }
 
+// DELETE /links/{id}
+func (h *LinkHandler) DeleteLink(w http.ResponseWriter, r *http.Request) {
+	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
+		return
+	}
+
+	err = h.service.DeleteLink(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
+			return
+		}
+		respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to delete link"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// POST /links/{id}/click
+func (h *LinkHandler) TrackClick(w http.ResponseWriter, r *http.Request) {
+	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
+		return
+	}
+
+	err = h.service.TrackClick(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, services.ErrLinkNotFound) {
+			respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
+			return
+		}
+		respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to track click"})
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"message": "click recorded"})
+}
+
 // Extracts numerical id from a path, like /links/123
 func extractIDFromPath(path, prefix string) (int64, error) {
 	// Remove prefix and clean path
