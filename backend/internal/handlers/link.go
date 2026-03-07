@@ -35,6 +35,7 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// POST /links
 func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	var req CreateLinkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -51,6 +52,7 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, link)
 }
 
+// GET /links
 func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 	// Optional query param: ?stats=true to include links statistics
 	includeStats := r.URL.Query().Get("stats") == "true"
@@ -66,6 +68,7 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GET /links/{id}
 func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
 	id, err := extractIDFromPath(r.URL.Path, "/links/")
 	if err != nil {
@@ -98,6 +101,29 @@ func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
 		}
 		respondJSON(w, http.StatusOK, link)
 	}
+}
+
+// PUT /links/{id}
+func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
+	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
+		return
+	}
+
+	var req UpdateLinkRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
+		return
+	}
+
+	link, err := h.service.UpdateLink(r.Context(), id, req.Title, req.URL, req.Description)
+	if err != nil {
+		handleServiceError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, link)
 }
 
 // Extracts numerical id from a path, like /links/123
