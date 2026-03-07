@@ -58,13 +58,19 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 	includeStats := r.URL.Query().Get("stats") == "true"
 
 	if includeStats {
-		links, err := h.service.GetAllLinks(r.Context())
+		links, err := h.service.GetAllLinksWithStats(r.Context())
 		if err != nil {
 			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
 			return
 		}
 		respondJSON(w, http.StatusOK, links)
 	} else {
+		links, err := h.service.GetAllLinks(r.Context())
+		if err != nil {
+			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
+			return
+		}
+		respondJSON(w, http.StatusOK, links)
 	}
 }
 
