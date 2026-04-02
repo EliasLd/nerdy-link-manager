@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+:root {
+	color-scheme: dark;
+}
+
+body {
+	@apply bg-gray-950 text-gray-100 antialiased;
+	font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.input-nerd {
+	@apply px-3 py-2 rounded-lg bg-gray-900 border border-cyan-500/30 text-gray-100 outline-none focus:border-cyan-400;
+}
+
+.btn-primary {
+	@apply px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 text-cyan-200;
+}
+
+.btn-ghost {
+	@apply px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500 text-gray-200;
+}
