@@ -1,10 +1,22 @@
 import { env } from '$env/dynamic/public';
-import type { AuthResponse, LinkItem } from '$lib/./types';
+import type { AuthResponse, BackendLinkItem, LinkItem } from '$lib/types';
 
 const API_BASE = env.PUBLIC_API_URL;
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+}
+
+function mapLinkFromBackend(item: BackendLinkItem): LinkItem {
+  return {
+    id: String(item.id),
+    name: item.title,
+    url: item.url,
+    description: item.description ?? null,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    clicks: item.click_count
+  };
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -43,8 +55,10 @@ export const api = {
       body: JSON.stringify({ email, password })
     }),
 
-  getLinks: (withStats = true) =>
-    request<LinkItem[]>(`/links${withStats ? '?stats=true' : ''}`),
+  getLinks: async (withStats = true): Promise<LinkItem[]> => {
+    const raw = await request<BackendLinkItem[]>(`/links${withStats ? '?stats=true' : ''}`);
+    return raw.map(mapLinkFromBackend);
+  },
 
   registerClick: (id: string) =>
     request<void>(`/links/${id}/click`, {
