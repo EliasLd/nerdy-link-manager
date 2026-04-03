@@ -33,8 +33,8 @@
 	async function openLink(link: LinkItem) {
 		try {
 			await api.registerClick(link.id);
+            await loadLinks();
 		} catch {
-			// non bloquant
 		}
 		window.open(link.url, '_blank', 'noopener,noreferrer');
 	}
