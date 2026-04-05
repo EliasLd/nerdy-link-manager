@@ -2,6 +2,16 @@ export type AuthResponse = {
   token: string;
 };
 
+export type BackendLinkItem = {
+  id: number;
+  title: string;
+  url: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+  click_count: number;
+};
+
 export type LinkItem = {
   id: string;
   name: string;
