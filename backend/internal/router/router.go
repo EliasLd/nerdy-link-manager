@@ -18,11 +18,11 @@ func New(
 
 	// Public routes
 	mux.HandleFunc("/health", handlers.HealthCheck)
-	mux.HandleFunc("POST /register", authHandler.Register)
-	mux.HandleFunc("POST /login", authHandler.Login)
+	mux.HandleFunc("POST /api/register", authHandler.Register)
+	mux.HandleFunc("POST /api/login", authHandler.Login)
 
 	// link routes (protected)
-	mux.Handle("/links", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/api/links", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			LinkHandler.GetAllLinks(w, r)
@@ -34,7 +34,7 @@ func New(
 	})))
 
 	// link detail routes: /links/{id}
-	mux.Handle("/links/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/api/links/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// /links/{id}/click
 		if strings.HasSuffix(r.URL.Path, "/click") {
 			if r.Method == http.MethodPost {
