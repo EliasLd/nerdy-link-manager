@@ -44,24 +44,24 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   register: (email: string, password: string) =>
-    request<AuthResponse>('/register', {
+    request<AuthResponse>('/api/register', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     }),
 
   login: (email: string, password: string) =>
-    request<AuthResponse>('/login', {
+    request<AuthResponse>('/api/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     }),
 
   getLinks: async (withStats = true): Promise<LinkItem[]> => {
-    const raw = await request<BackendLinkItem[]>(`/links${withStats ? '?stats=true' : ''}`);
+    const raw = await request<BackendLinkItem[]>(`/api/links${withStats ? '?stats=true' : ''}`);
     return raw.map(mapLinkFromBackend);
   },
 
   registerClick: (id: string) =>
-    request<void>(`/links/${id}/click`, {
+    request<void>(`/api/links/${id}/click`, {
       method: 'POST'
     })
 };
