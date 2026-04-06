@@ -5,6 +5,7 @@
 	import { api } from '$lib/api';
 	import type { LinkItem } from '$lib/types';
 	import LinkCard from '$lib/components/LinkCard.svelte';
+	import AuthMenu from '$lib/components/AuthMenu.svelte';
 
 	let links = $state<LinkItem[]>([]);
 	let loading = $state(true);
@@ -33,15 +34,18 @@
 	async function openLink(link: LinkItem) {
 		try {
 			await api.registerClick(link.id);
-            await loadLinks();
-		} catch {
-		}
+			await loadLinks();
+		} catch {}
 		window.open(link.url, '_blank', 'noopener,noreferrer');
 	}
 
 	async function doLogout() {
 		logout();
 		await goto('/auth');
+	}
+
+	async function goToRegister() {
+		await goto('/register');
 	}
 </script>
 
@@ -51,7 +55,8 @@
 			<h1 class="text-3xl font-bold text-cyan-300">[ dashboard ]</h1>
 			<p class="text-gray-400 text-sm">read://links</p>
 		</div>
-		<button class="btn-ghost" onclick={doLogout}>Logout</button>
+
+		<AuthMenu on:logout={doLogout} on:register={goToRegister} />
 	</header>
 
 	{#if loading}
