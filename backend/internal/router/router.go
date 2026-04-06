@@ -18,8 +18,10 @@ func New(
 
 	// Public routes
 	mux.HandleFunc("/health", handlers.HealthCheck)
-	mux.HandleFunc("POST /api/register", authHandler.Register)
 	mux.HandleFunc("POST /api/login", authHandler.Login)
+
+	// Protected auth routes
+	mux.Handle("POST /api/register", authMiddleware(http.HandlerFunc(authHandler.Register)))
 
 	// link routes (protected)
 	mux.Handle("/api/links", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
