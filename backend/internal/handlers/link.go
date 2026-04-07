@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/EliasLd/nerdy-link-manager/internal/middleware"
 	"github.com/EliasLd/nerdy-link-manager/internal/services"
 )
 
@@ -43,7 +44,13 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.CreateLink(r.Context(), req.Title, req.URL, req.Description)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
+	link, err := h.service.CreateLink(r.Context(), userID, req.Title, req.URL, req.Description)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -57,15 +64,21 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 	// Optional query param: ?stats=true to include links statistics
 	includeStats := r.URL.Query().Get("stats") == "true"
 
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
 	if includeStats {
-		links, err := h.service.GetAllLinksWithStats(r.Context())
+		links, err := h.service.GetAllLinksWithStats(r.Context(), userID)
 		if err != nil {
 			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
 			return
 		}
 		respondJSON(w, http.StatusOK, links)
 	} else {
-		links, err := h.service.GetAllLinks(r.Context())
+		links, err := h.service.GetAllLinks(r.Context(), userID)
 		if err != nil {
 			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
 			return
@@ -82,10 +95,16 @@ func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
 	includeStats := r.URL.Query().Get("stats") == "true"
 
 	if includeStats {
-		link, err := h.service.GetLinkWithStats(r.Context(), id)
+		link, err := h.service.GetLinkWithStats(r.Context(), userID, id)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
@@ -96,7 +115,7 @@ func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
 		}
 		respondJSON(w, http.StatusOK, link)
 	} else {
-		link, err := h.service.GetLink(r.Context(), id)
+		link, err := h.service.GetLink(r.Context(), userID, id)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
@@ -117,13 +136,19 @@ func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
 	var req UpdateLinkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
-	link, err := h.service.UpdateLink(r.Context(), id, req.Title, req.URL, req.Description)
+	link, err := h.service.UpdateLink(r.Context(), userID, id, req.Title, req.URL, req.Description)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -140,7 +165,13 @@ func (h *LinkHandler) DeleteLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.DeleteLink(r.Context(), id)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
+	err = h.service.DeleteLink(r.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
@@ -161,7 +192,13 @@ func (h *LinkHandler) TrackClick(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.TrackClick(r.Context(), id)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		respondJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	}
+
+	err = h.service.TrackClick(r.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, services.ErrLinkNotFound) {
 			respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
