@@ -60,3 +60,8 @@ func AuthMiddleware(jwtManager auth.JWTManager) func(http.Handler) http.Handler 
 	}
 }
 
+func GetUserID(ctx context.Context) (int64, bool) {
+	v := ctx.Value(userIDKey)
+	id, ok := v.(int64)
+	return id, ok
+}

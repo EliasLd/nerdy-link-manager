@@ -24,7 +24,7 @@ func NewLinkService(repo repositories.LinkRepository) *LinkService {
 }
 
 // Validates data and creates new link
-func (s *LinkService) CreateLink(ctx context.Context, title, rawURL string, description *string) (*repositories.Link, error) {
+func (s *LinkService) CreateLink(ctx context.Context, userID int64, title, rawURL string, description *string) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, ErrEmptyTitle
@@ -44,18 +44,18 @@ func (s *LinkService) CreateLink(ctx context.Context, title, rawURL string, desc
 		}
 	}
 
-	return s.repo.Create(ctx, title, rawURL, description)
+	return s.repo.Create(ctx, userID, title, rawURL, description)
 }
 
-func (s *LinkService) GetLink(ctx context.Context, id int64) (*repositories.Link, error) {
-	return s.repo.FindByID(ctx, id)
+func (s *LinkService) GetLink(ctx context.Context, userID int64, id int64) (*repositories.Link, error) {
+	return s.repo.FindByID(ctx, userID, id)
 }
 
-func (s *LinkService) GetAllLinks(ctx context.Context) ([]repositories.Link, error) {
-	return s.repo.FindAll(ctx)
+func (s *LinkService) GetAllLinks(ctx context.Context, userID int64) ([]repositories.Link, error) {
+	return s.repo.FindAll(ctx, userID)
 }
 
-func (s *LinkService) UpdateLink(ctx context.Context, id int64, title, rawURL string, description *string) (*repositories.Link, error) {
+func (s *LinkService) UpdateLink(ctx context.Context, userID int64, id int64, title, rawURL string, description *string) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, ErrEmptyTitle
@@ -74,28 +74,28 @@ func (s *LinkService) UpdateLink(ctx context.Context, id int64, title, rawURL st
 		}
 	}
 
-	return s.repo.Update(ctx, id, title, rawURL, description)
+	return s.repo.Update(ctx, userID, id, title, rawURL, description)
 }
 
-func (s *LinkService) DeleteLink(ctx context.Context, id int64) error {
-	return s.repo.Delete(ctx, id)
+func (s *LinkService) DeleteLink(ctx context.Context, userID int64, id int64) error {
+	return s.repo.Delete(ctx, userID, id)
 }
 
-func (s *LinkService) TrackClick(ctx context.Context, linkID int64) error {
-	_, err := s.repo.FindByID(ctx, linkID)
+func (s *LinkService) TrackClick(ctx context.Context, userID int64, linkID int64) error {
+	_, err := s.repo.FindByID(ctx, userID, linkID)
 	if err != nil {
 		return ErrLinkNotFound
 	}
 
-	return s.repo.RecordClick(ctx, linkID)
+	return s.repo.RecordClick(ctx, userID, linkID)
 }
 
-func (s *LinkService) GetLinkWithStats(ctx context.Context, linkID int64) (*repositories.LinkWithStats, error) {
-	return s.repo.GetLinkStats(ctx, linkID)
+func (s *LinkService) GetLinkWithStats(ctx context.Context, userID int64, linkID int64) (*repositories.LinkWithStats, error) {
+	return s.repo.GetLinkStats(ctx, userID, linkID)
 }
 
-func (s *LinkService) GetAllLinksWithStats(ctx context.Context) ([]repositories.LinkWithStats, error) {
-	return s.repo.GetAllLinksWithStats(ctx)
+func (s *LinkService) GetAllLinksWithStats(ctx context.Context, userID int64) ([]repositories.LinkWithStats, error) {
+	return s.repo.GetAllLinksWithStats(ctx, userID)
 }
 
 // Checks that URL is valid and complete

@@ -22,16 +22,16 @@ type LinkWithStats struct {
 
 type LinkRepository interface {
 	// CRUD operations
-	Create(ctx context.Context, title, url string, description *string) (*Link, error)
-	FindByID(ctx context.Context, id int64) (*Link, error)
-	FindAll(ctx context.Context) ([]Link, error)
-	Update(ctx context.Context, id int64, title, url string, description *string) (*Link, error)
-	Delete(ctx context.Context, id int64) error
+	Create(ctx context.Context, userID int64, title, url string, description *string) (*Link, error)
+	FindByID(ctx context.Context, userID int64, id int64) (*Link, error)
+	FindAll(ctx context.Context, userID int64) ([]Link, error)
+	Update(ctx context.Context, userID int64, id int64, title, url string, description *string) (*Link, error)
+	Delete(ctx context.Context, userID int64, id int64) error
 
 	// Stats operations
-	RecordClick(ctx context.Context, linkID int64) error
-	GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error)
-	GetAllLinksWithStats(ctx context.Context) ([]LinkWithStats, error)
+	RecordClick(ctx context.Context, userID int64, linkID int64) error
+	GetLinkStats(ctx context.Context, userID int64, linkID int64) (*LinkWithStats, error)
+	GetAllLinksWithStats(ctx context.Context, userID int64) ([]LinkWithStats, error)
 }
 
 type sqliteLinkRepository struct {
@@ -42,13 +42,13 @@ func NewLinkRepository(db *sql.DB) LinkRepository {
 	return &sqliteLinkRepository{db: db}
 }
 
-func (r *sqliteLinkRepository) Create(ctx context.Context, title, url string, description *string) (*Link, error) {
+func (r *sqliteLinkRepository) Create(ctx context.Context, userID int64, title, url string, description *string) (*Link, error) {
 	query := `
-		INSERT INTO links(title, url, description)
-		VALUES (?, ?, ?)
+		INSERT INTO links(title, url, description, user_id)
+		VALUES (?, ?, ?, ?)
 	`
 
-	result, err := r.db.ExecContext(ctx, query, title, url, description)
+	result, err := r.db.ExecContext(ctx, query, title, url, description, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,17 +58,17 @@ func (r *sqliteLinkRepository) Create(ctx context.Context, title, url string, de
 		return nil, err
 	}
 
-	return r.FindByID(ctx, id)
+	return r.FindByID(ctx, userID, id)
 }
 
-func (r *sqliteLinkRepository) FindByID(ctx context.Context, id int64) (*Link, error) {
+func (r *sqliteLinkRepository) FindByID(ctx context.Context, userID int64, id int64) (*Link, error) {
 	query := `
 		SELECT id, title, url, description, created_at, updated_at
 		FROM links
-		WHERE id = ?
+		WHERE id = ? AND user_id = ?
 	`
 
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRowContext(ctx, query, id, userID)
 
 	var link Link
 	// Description field can be omitted
@@ -87,14 +87,15 @@ func (r *sqliteLinkRepository) FindByID(ctx context.Context, id int64) (*Link, e
 }
 
 // Retrieves all links, sorted by creation date DESC
-func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error) {
+func (r *sqliteLinkRepository) FindAll(ctx context.Context, userID int64) ([]Link, error) {
 	query := `
 		SELECT id, title, url, description, created_at, updated_at
 		FROM links
+		WHERE user_id = ?
 		ORDER BY created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,51 +123,65 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context) ([]Link, error) {
 	return links, rows.Err()
 }
 
-func (r *sqliteLinkRepository) Update(ctx context.Context, id int64, title, url string, description *string) (*Link, error) {
+func (r *sqliteLinkRepository) Update(ctx context.Context, userID int64, id int64, title, url string, description *string) (*Link, error) {
 	query := `
 		UPDATE links
 		SET title = ?, url = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ?
+		WHERE id = ? AND user_id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, title, url, description, id)
+	_, err := r.db.ExecContext(ctx, query, title, url, description, id, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.FindByID(ctx, id)
+	return r.FindByID(ctx, userID, id)
 }
 
 // Deletes a link (Cascade deletes its clicks too)
-func (r *sqliteLinkRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM links WHERE id = ?`
-	_, err := r.db.ExecContext(ctx, query, id)
+func (r *sqliteLinkRepository) Delete(ctx context.Context, userID int64, id int64) error {
+	query := `DELETE FROM links WHERE id = ? AND user_id = ?`
+	_, err := r.db.ExecContext(ctx, query, id, userID)
 	return err
 }
 
-func (r *sqliteLinkRepository) RecordClick(ctx context.Context, linkID int64) error {
+func (r *sqliteLinkRepository) RecordClick(ctx context.Context, userID int64, linkID int64) error {
 	query := `
 		INSERT INTO link_clicks(link_id)
-		VALUES (?)
+		SELECT id
+		FROM links
+		WHERE id = ? AND user_id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, linkID)
-	return err
+	result, err := r.db.ExecContext(ctx, query, linkID, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 // Retrieves a link with its clicks data
-func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (*LinkWithStats, error) {
+func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, linkID int64) (*LinkWithStats, error) {
 	query := `
 		SELECT
 			l.id, l.title, l.url, l.description, l.created_at, l.updated_at,
 			COUNT(lc.id) as click_count
 		FROM links l
 		LEFT JOIN link_clicks lc ON l.id = lc.link_id
-		WHERE l.id = ?
+		WHERE l.id = ? AND l.user_id = ?
 		GROUP BY l.id
 	`
 
-	row := r.db.QueryRowContext(ctx, query, linkID)
+	row := r.db.QueryRowContext(ctx, query, linkID, userID)
 
 	var linkStats LinkWithStats
 	var description sql.NullString
@@ -194,18 +209,19 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, linkID int64) (
 }
 
 // Retrieves all links with their data
-func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context) ([]LinkWithStats, error) {
+func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context, userID int64) ([]LinkWithStats, error) {
 	query := `
 		SELECT
 			l.id, l.title, l.url, l.description, l.created_at, l.updated_at,
 			COUNT(lc.id) as click_count
 		FROM links l
 		LEFT JOIN link_clicks lc ON l.id = lc.link_id
+		WHERE l.user_id = ?
 		GROUP BY l.id
 		ORDER BY l.created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
