@@ -16,6 +16,7 @@ type UserRepository interface {
 	Create(ctx context.Context, email, passwordHash string) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id int64) (*User, error)
+	Count(ctx context.Context) (int64, error)
 }
 
 type sqliteUserRepository struct {
@@ -71,4 +72,16 @@ func (r *sqliteUserRepository) FindByID(ctx context.Context, id int64) (*User, e
 	}
 
 	return &user, nil
+}
+
+func (r *sqliteUserRepository) Count(ctx context.Context) (int64, error) {
+	query := `
+		SELECT COUNT(*) FROM users	
+	`
+	row := r.db.QueryRowContext(ctx, query)
+	var c int64
+	if err := row.Scan(&c); err != nil {
+		return 0, err
+	}
+	return c, nil
 }
