@@ -8,9 +8,11 @@ import (
 )
 
 type Config struct {
-	Port      string
-	JWTSecret string
-	DBPath    string
+	Port                 string
+	JWTSecret            string
+	DBPath               string
+	InitialAdminEmail    string
+	InitialAdminPassword string
 }
 
 // Reads environment file and returns config
@@ -22,9 +24,11 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Port:      getEnv("PORT", "8080"),
-		JWTSecret: getEnv("JWT_SECRET", ""),
-		DBPath:    getEnv("DB_PATH", "internal/db/nedry_link_manaer.db"),
+		Port:                 getEnv("PORT", "8080"),
+		JWTSecret:            getEnv("JWT_SECRET", ""),
+		DBPath:               getEnv("DB_PATH", "internal/db/nedry_link_manaer.db"),
+		InitialAdminEmail:    getEnv("INITIAL_ADMIN_EMAIL", ""),
+		InitialAdminPassword: getEnv("INITIAL_ADMIN_PASSWORD", ""),
 	}
 }
 

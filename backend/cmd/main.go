@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -34,6 +35,20 @@ func main() {
 
 	authHandler := handlers.NewAuthHandler(userService, jwtManager)
 	linkHandler := handlers.NewLinkHandler(linkService)
+
+	created, err := userService.BootstrapInitialUser(
+		context.Background(),
+		cfg.InitialAdminEmail,
+		cfg.InitialAdminPassword,
+	)
+	if err != nil {
+		log.Fatalf("[ERROR] Failed to bootstrap intial user: %v", err)
+	}
+	if created {
+		log.Println("[INFO] Initial admin user created")
+	} else {
+		log.Println("[INFO] Initial admin bootstrap skipped")
+	}
 
 	authMiddleware := middleware.AuthMiddleware(*jwtManager)
 
