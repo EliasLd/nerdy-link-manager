@@ -57,7 +57,7 @@ func (s *UserService) BootstrapInitialUser(ctx context.Context, email, password 
 
 	// No user exists: bootstrap is mandatory
 	if email == "" || password == "" {
-		return false, errors.New("No users found in database: INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASASWORD are required environment variables")
+		return false, errors.New("No users found in database: INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD are required environment variables")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
