@@ -1,5 +1,11 @@
 import { env } from '$env/dynamic/public';
-import type { AuthResponse, BackendLinkItem, LinkItem } from '$lib/types';
+import type {
+  AuthResponse,
+  BackendLinkItem,
+  LinkItem,
+  CreateLinkPayload,
+  UpdateLinkPayload
+} from '$lib/types';
 
 const API_BASE = env.PUBLIC_API_URL;
 
@@ -16,6 +22,14 @@ function mapLinkFromBackend(item: BackendLinkItem): LinkItem {
     createdAt: item.created_at,
     updatedAt: item.updated_at,
     clicks: item.click_count
+  };
+}
+
+function toBackendPayload(payload: CreateLinkPayload | UpdateLinkPayload) {
+  return {
+    title: payload.name,
+    url: payload.url,
+    description: payload.description ?? null
   };
 }
 
@@ -38,7 +52,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const contentType = res.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) return (await res.json()) as T;
-
   return '' as T;
 }
 
@@ -61,7 +74,26 @@ export const api = {
   },
 
   registerClick: (id: string) =>
-    request<void>(`/api/links/${id}/click`, {
-      method: 'POST'
+    request<void>(`/api/links/${id}/click`, { method: 'POST' }),
+
+  createLink: async (payload: CreateLinkPayload): Promise<LinkItem> => {
+    const raw = await request<BackendLinkItem>('/api/links?stats=true', {
+      method: 'POST',
+      body: JSON.stringify(toBackendPayload(payload))
+    });
+    return mapLinkFromBackend(raw);
+  },
+
+  updateLink: async (id: string, payload: UpdateLinkPayload): Promise<LinkItem> => {
+    const raw = await request<BackendLinkItem>(`/api/links/${id}?stats=true`, {
+      method: 'PUT',
+      body: JSON.stringify(toBackendPayload(payload))
+    });
+    return mapLinkFromBackend(raw);
+  },
+
+  deleteLink: (id: string) =>
+    request<void>(`/api/links/${id}`, {
+      method: 'DELETE'
     })
 };
