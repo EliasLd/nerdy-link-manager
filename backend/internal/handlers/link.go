@@ -89,7 +89,7 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 
 // GET /links/{id}
 func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
-	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	id, err := extractIDFromPath(r.URL.Path, "/api/links/")
 	if err != nil {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
 		return
@@ -130,7 +130,7 @@ func (h *LinkHandler) GetLink(w http.ResponseWriter, r *http.Request) {
 
 // PUT /links/{id}
 func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
-	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	id, err := extractIDFromPath(r.URL.Path, "/api/links/")
 	if err != nil {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
 		return
@@ -159,7 +159,7 @@ func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /links/{id}
 func (h *LinkHandler) DeleteLink(w http.ResponseWriter, r *http.Request) {
-	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	id, err := extractIDFromPath(r.URL.Path, "/api/links/")
 	if err != nil {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
 		return
@@ -186,7 +186,7 @@ func (h *LinkHandler) DeleteLink(w http.ResponseWriter, r *http.Request) {
 
 // POST /links/{id}/click
 func (h *LinkHandler) TrackClick(w http.ResponseWriter, r *http.Request) {
-	id, err := extractIDFromPath(r.URL.Path, "/links/")
+	id, err := extractIDFromPath(r.URL.Path, "/api/links/")
 	if err != nil {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid link ID"})
 		return
@@ -213,14 +213,14 @@ func (h *LinkHandler) TrackClick(w http.ResponseWriter, r *http.Request) {
 
 // Extracts numerical id from a path, like /links/123
 func extractIDFromPath(path, prefix string) (int64, error) {
-	// Remove prefix and clean path
 	idStr := strings.TrimPrefix(path, prefix)
+	if idStr == path {
+		return 0, strconv.ErrSyntax // prefix not found
+	}
+
 	idStr = strings.TrimSuffix(idStr, "/click")
 	idStr = strings.TrimSuffix(idStr, "/")
-
-	// Parse id to int64
 	return strconv.ParseInt(idStr, 10, 64)
-
 }
 
 // Encodes a response in JSON with the appropriate status

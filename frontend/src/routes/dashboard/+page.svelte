@@ -3,13 +3,20 @@
 	import { onMount } from 'svelte';
 	import { isAuthenticated, logout } from '$lib/auth';
 	import { api } from '$lib/api';
-	import type { LinkItem } from '$lib/types';
+	import type { LinkItem, CreateLinkPayload, UpdateLinkPayload } from '$lib/types';
 	import LinkCard from '$lib/components/LinkCard.svelte';
+	import LinkModal from '$lib/components/LinkModal.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import AuthMenu from '$lib/components/AuthMenu.svelte';
 
 	let links = $state<LinkItem[]>([]);
 	let loading = $state(true);
 	let error = $state('');
+
+	let showCreateModal = $state(false);
+	let showEditModal = $state(false);
+	let showDeleteModal = $state(false);
+	let selectedLink = $state<LinkItem | null>(null);
 
 	onMount(async () => {
 		if (!isAuthenticated()) {
@@ -39,6 +46,52 @@
 		window.open(link.url, '_blank', 'noopener,noreferrer');
 	}
 
+	function openCreate() {
+		showCreateModal = true;
+	}
+	function openEdit(link: LinkItem) {
+		selectedLink = link;
+		showEditModal = true;
+	}
+	function openDelete(link: LinkItem) {
+		selectedLink = link;
+		showDeleteModal = true;
+	}
+
+	async function createLink(e: CustomEvent<CreateLinkPayload>) {
+		try {
+			await api.createLink(e.detail);
+			showCreateModal = false;
+			await loadLinks();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to create link';
+		}
+	}
+
+	async function editLink(e: CustomEvent<UpdateLinkPayload>) {
+		if (!selectedLink) return;
+		try {
+			await api.updateLink(selectedLink.id, e.detail);
+			showEditModal = false;
+			selectedLink = null;
+			await loadLinks();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to update link';
+		}
+	}
+
+	async function deleteLink() {
+		if (!selectedLink) return;
+		try {
+			await api.deleteLink(selectedLink.id);
+			showDeleteModal = false;
+			selectedLink = null;
+			await loadLinks();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to delete link';
+		}
+	}
+
 	async function doLogout() {
 		logout();
 		await goto('/auth');
@@ -50,13 +103,18 @@
 </script>
 
 <main class="min-h-screen px-4 py-8 max-w-5xl mx-auto">
-	<header class="flex items-center justify-between mb-6">
-		<div>
+	<header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
 			<h1 class="text-3xl font-bold text-cyan-300">[ dashboard ]</h1>
 			<p class="text-gray-400 text-sm">read://links</p>
 		</div>
 
-		<AuthMenu on:logout={doLogout} on:register={goToRegister} />
+        <div class="flex flex-col items-end sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <button class="btn-primary w-auto" onclick={openCreate}>+ Add link</button>
+            <div class="w-auto">
+                <AuthMenu on:logout={doLogout} on:register={goToRegister} />
+            </div>
+        </div>
 	</header>
 
 	{#if loading}
@@ -68,8 +126,30 @@
 	{:else}
 		<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 			{#each links as link (link.id)}
-				<LinkCard {link} onOpen={openLink} />
+				<LinkCard
+					{link}
+					onOpen={openLink}
+					onEdit={openEdit}
+					onDelete={openDelete}
+				/>
 			{/each}
 		</div>
 	{/if}
 </main>
+
+{#if showCreateModal}
+	<LinkModal mode="create" on:close={() => (showCreateModal = false)} on:save={createLink} />
+{/if}
+
+{#if showEditModal && selectedLink}
+	<LinkModal mode="edit" initial={selectedLink} on:close={() => { showEditModal = false; selectedLink = null; }} on:save={editLink} />
+{/if}
+
+{#if showDeleteModal && selectedLink}
+	<ConfirmDialog
+		title="Delete link"
+		message={`Delete "${selectedLink.name}"? This action cannot be undone.`}
+		on:close={() => { showDeleteModal = false; selectedLink = null; }}
+		on:confirm={deleteLink}
+	/>
+{/if}
