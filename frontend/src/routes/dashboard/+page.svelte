@@ -103,20 +103,41 @@
 </script>
 
 <main class="min-h-screen px-4 py-8 max-w-5xl mx-auto">
-	<header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-			<h1 class="text-3xl font-bold text-cyan-300">[ dashboard ]</h1>
-			<p class="text-gray-400 text-sm">read://links</p>
-		</div>
-
-        <div class="flex flex-col items-end sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-            <button class="btn-primary w-auto" onclick={openCreate}>+ Add link</button>
-            <div class="w-auto">
-                <AuthMenu on:logout={doLogout} on:register={goToRegister} />
-            </div>
+    <header class="flex items-start justify-between gap-3 mb-6">
+        <div class="min-w-0">
+            <h1 class="text-3xl font-bold text-cyan-300">[ dashboard ]</h1>
+            <p class="text-gray-400 text-sm">read://links</p>
         </div>
-	</header>
 
+        <!-- Desktop actions -->
+        <div class="hidden sm:flex items-center gap-2">
+            <button class="btn-primary" onclick={openCreate}>+ Add link</button>
+            <AuthMenu on:logout={doLogout} on:register={goToRegister} />
+        </div>
+
+        <!-- Mobile actions -->
+        <div class="sm:hidden flex flex-col items-end gap-2">
+        <button
+                class="btn-primary !px-3 !py-2 font-bold leading-none"
+                onclick={openCreate}
+                aria-label="Add link"
+                title="Add link"
+            >
+                +
+            </button>
+            <AuthMenu on:logout={doLogout} on:register={goToRegister} />
+        </div>
+    </header>
+
+    <!-- Mobile sticky add button -->
+    <button
+        class="sm:hidden fixed bottom-5 right-4 z-40 btn-primary !px-4 !py-3 shadow-lg"
+        onclick={openCreate}
+        aria-label="Add link"
+        title="Add link"
+    >
+        +
+    </button>
 	{#if loading}
 		<p class="text-gray-400">Loading links...</p>
 	{:else if error}
