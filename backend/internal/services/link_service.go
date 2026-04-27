@@ -16,15 +16,26 @@ var (
 )
 
 type LinkService struct {
-	repo repositories.LinkRepository
+	repo       repositories.LinkRepository
+	folderRepo repositories.FolderRepository
 }
 
-func NewLinkService(repo repositories.LinkRepository) *LinkService {
-	return &LinkService{repo: repo}
+func NewLinkService(repo repositories.LinkRepository, folderRepo repositories.FolderRepository) *LinkService {
+	return &LinkService{
+		repo:       repo,
+		folderRepo: folderRepo,
+	}
 }
 
 // Validates data and creates new link
-func (s *LinkService) CreateLink(ctx context.Context, userID int64, title, rawURL string, description *string) (*repositories.Link, error) {
+// folderID is optional (nil => no folder)
+func (s *LinkService) CreateLink(
+	ctx context.Context,
+	userID int64,
+	title, rawURL string,
+	description *string,
+	folderID *int64,
+) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, ErrEmptyTitle
@@ -44,18 +55,32 @@ func (s *LinkService) CreateLink(ctx context.Context, userID int64, title, rawUR
 		}
 	}
 
-	return s.repo.Create(ctx, userID, title, rawURL, description)
+	// Validate folder ownership if provided
+	if folderID != nil {
+		if _, err := s.folderRepo.FindByID(ctx, userID, *folderID); err != nil {
+			return nil, ErrFolderNotFound
+		}
+	}
+
+	return s.repo.Create(ctx, userID, title, rawURL, description, folderID)
 }
 
 func (s *LinkService) GetLink(ctx context.Context, userID int64, id int64) (*repositories.Link, error) {
 	return s.repo.FindByID(ctx, userID, id)
 }
 
-func (s *LinkService) GetAllLinks(ctx context.Context, userID int64) ([]repositories.Link, error) {
-	return s.repo.FindAll(ctx, userID)
+func (s *LinkService) GetAllLinks(ctx context.Context, userID int64, folderID *int64) ([]repositories.Link, error) {
+	return s.repo.FindAll(ctx, userID, folderID)
 }
 
-func (s *LinkService) UpdateLink(ctx context.Context, userID int64, id int64, title, rawURL string, description *string) (*repositories.Link, error) {
+func (s *LinkService) UpdateLink(
+	ctx context.Context,
+	userID int64,
+	id int64,
+	title, rawURL string,
+	description *string,
+	folderID *int64,
+) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, ErrEmptyTitle
@@ -74,7 +99,14 @@ func (s *LinkService) UpdateLink(ctx context.Context, userID int64, id int64, ti
 		}
 	}
 
-	return s.repo.Update(ctx, userID, id, title, rawURL, description)
+	// folderID nil is valid => unlink from folder
+	if folderID != nil {
+		if _, err := s.folderRepo.FindByID(ctx, userID, *folderID); err != nil {
+			return nil, ErrFolderNotFound
+		}
+	}
+
+	return s.repo.Update(ctx, userID, id, title, rawURL, description, folderID)
 }
 
 func (s *LinkService) DeleteLink(ctx context.Context, userID int64, id int64) error {
@@ -94,8 +126,8 @@ func (s *LinkService) GetLinkWithStats(ctx context.Context, userID int64, linkID
 	return s.repo.GetLinkStats(ctx, userID, linkID)
 }
 
-func (s *LinkService) GetAllLinksWithStats(ctx context.Context, userID int64) ([]repositories.LinkWithStats, error) {
-	return s.repo.GetAllLinksWithStats(ctx, userID)
+func (s *LinkService) GetAllLinksWithStats(ctx context.Context, userID int64, folderID *int64) ([]repositories.LinkWithStats, error) {
+	return s.repo.GetAllLinksWithStats(ctx, userID, folderID)
 }
 
 // Checks that URL is valid and complete
