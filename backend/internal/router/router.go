@@ -12,6 +12,7 @@ import (
 func New(
 	authHandler *handlers.AuthHandler,
 	LinkHandler *handlers.LinkHandler,
+	folderHandler *handlers.FolderHandler,
 	authMiddleware func(http.Handler) http.Handler,
 ) http.Handler {
 	mux := http.NewServeMux()
@@ -55,6 +56,28 @@ func New(
 			LinkHandler.UpdateLink(w, r)
 		case http.MethodDelete:
 			LinkHandler.DeleteLink(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	mux.Handle("/api/folders", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			folderHandler.GetFolders(w, r)
+		case http.MethodPost:
+			folderHandler.CreateFolder(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	mux.Handle("/api/folders/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			folderHandler.UpdateFolder(w, r)
+		case http.MethodDelete:
+			folderHandler.DeleteFolder(w, r)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

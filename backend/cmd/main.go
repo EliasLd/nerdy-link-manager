@@ -28,12 +28,16 @@ func main() {
 	userRepo := repositories.NewUserRepository(database.DB)
 	userService := services.NewUserService(userRepo)
 
+	folderRepo := repositories.NewFolderRepository(database.DB)
+	folderService := services.NewFolderService(folderRepo)
+
 	linkRepo := repositories.NewLinkRepository(database.DB)
-	linkService := services.NewLinkService(linkRepo)
+	linkService := services.NewLinkService(linkRepo, folderRepo)
 
 	jwtManager := auth.NewJWTManager(cfg.JWTSecret, time.Hour*3600)
 
 	authHandler := handlers.NewAuthHandler(userService, jwtManager)
+	folderHandler := handlers.NewFolderHandler(folderService)
 	linkHandler := handlers.NewLinkHandler(linkService)
 
 	created, err := userService.BootstrapInitialUser(
@@ -52,7 +56,7 @@ func main() {
 
 	authMiddleware := middleware.AuthMiddleware(*jwtManager)
 
-	r := router.New(authHandler, linkHandler, authMiddleware)
+	r := router.New(authHandler, linkHandler, folderHandler, authMiddleware)
 
 	log.Println("[INFO] Starting server on port", cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))

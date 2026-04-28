@@ -16,20 +16,22 @@ type LinkHandler struct {
 	service *services.LinkService
 }
 
-func NewLinkHandler(serivce *services.LinkService) *LinkHandler {
-	return &LinkHandler{service: serivce}
+func NewLinkHandler(service *services.LinkService) *LinkHandler {
+	return &LinkHandler{service: service}
 }
 
 type CreateLinkRequest struct {
 	Title       string  `json:"title"`
 	URL         string  `json:"url"`
 	Description *string `json:"description,omitempty"`
+	FolderID    *int64  `json:"folder_id,omitempty"`
 }
 
 type UpdateLinkRequest struct {
 	Title       string  `json:"title"`
 	URL         string  `json:"url"`
 	Description *string `json:"description,omitempty"`
+	FolderID    *int64  `json:"folder_id,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -50,7 +52,7 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.CreateLink(r.Context(), userID, req.Title, req.URL, req.Description)
+	link, err := h.service.CreateLink(r.Context(), userID, req.Title, req.URL, req.Description, req.FolderID)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -61,8 +63,21 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 
 // GET /links
 func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
-	// Optional query param: ?stats=true to include links statistics
+	// Optional query params:
+	// - ?stats=true to include links statistics
+	// - ?folder_id=123 to filter links by folder
 	includeStats := r.URL.Query().Get("stats") == "true"
+
+	var folderID *int64
+	rawFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	if rawFolderID != "" {
+		parsed, err := strconv.ParseInt(rawFolderID, 10, 64)
+		if err != nil {
+			respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid folder_id"})
+			return
+		}
+		folderID = &parsed
+	}
 
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -71,14 +86,14 @@ func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if includeStats {
-		links, err := h.service.GetAllLinksWithStats(r.Context(), userID)
+		links, err := h.service.GetAllLinksWithStats(r.Context(), userID, folderID)
 		if err != nil {
 			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
 			return
 		}
 		respondJSON(w, http.StatusOK, links)
 	} else {
-		links, err := h.service.GetAllLinks(r.Context(), userID)
+		links, err := h.service.GetAllLinks(r.Context(), userID, folderID)
 		if err != nil {
 			respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch links"})
 			return
@@ -148,7 +163,7 @@ func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.UpdateLink(r.Context(), userID, id, req.Title, req.URL, req.Description)
+	link, err := h.service.UpdateLink(r.Context(), userID, id, req.Title, req.URL, req.Description, req.FolderID)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -227,10 +242,10 @@ func extractIDFromPath(path, prefix string) (int64, error) {
 func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(payload)
+	_ = json.NewEncoder(w).Encode(payload)
 }
 
-// Mapps service's errors to HTTP status
+// Maps service errors to HTTP status
 func handleServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, services.ErrInvalidURL):
@@ -239,7 +254,10 @@ func handleServiceError(w http.ResponseWriter, err error) {
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "title cannot be empty"})
 	case errors.Is(err, services.ErrLinkNotFound):
 		respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
+	case errors.Is(err, services.ErrFolderNotFound):
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "folder not found"})
 	default:
 		respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 	}
 }
+
