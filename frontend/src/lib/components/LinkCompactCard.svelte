@@ -5,12 +5,13 @@
 
 	let { link }: { link: LinkItem } = $props();
 
-	const dispatch = createEventDispatcher<{
-		open: LinkItem;
-		details: LinkItem;
-		edit: LinkItem;
-		delete: LinkItem;
-	}>();
+    const dispatch = createEventDispatcher<{
+        open: LinkItem;
+        details: LinkItem;
+        edit: LinkItem;
+        delete: LinkItem;
+        addToFolder: LinkItem;
+    }>();
 
 	let menuOpen = $state(false);
 	let rootRef: HTMLDivElement | null = null;
@@ -111,36 +112,45 @@
 			class="absolute z-[60] w-40 rounded-lg border border-cyan-500/30 bg-gray-950/95 p-1 shadow-xl"
 			style={menuStyle}
 		>
-			<button
-                class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded"
-                onclick={() => {
-                    closeMenu();
-                    dispatch('details', link);
-                }}
-            >
-                Open details
-            </button>
+		<button
+            class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded"
+            onclick={() => {
+                closeMenu();
+                dispatch('details', link);
+            }}
+        >
+            Open details
+        </button>
 
-            <button
-                class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded"
-                onclick={() => {
-                    closeMenu();
-                    dispatch('edit', link);
-                }}
-            >
-                Edit
-            </button>
+        <button
+            class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded"
+            onclick={() => {
+                closeMenu();
+                dispatch('edit', link);
+            }}
+        >
+            Edit
+        </button>
 
-            <button
-                class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
-                onclick={() => {
-                    closeMenu();
-                    dispatch('delete', link);
-                }}
-            >
-                Delete
-            </button>
-        </div>
+        <button
+            class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded"
+            onclick={() => {
+                closeMenu();
+                dispatch('addToFolder', link);
+            }}
+        >
+            Add to folder
+</button>
+
+<button
+	class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
+	onclick={() => {
+		closeMenu();
+		dispatch('delete', link);
+	}}
+>
+	Delete
+</button>        </div>
 	{/if}
 
 	<button class="w-full aspect-square grid place-items-center" onclick={() => dispatch('open', link)}>
