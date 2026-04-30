@@ -22,15 +22,23 @@
 		<p class="text-xs text-gray-400 mb-4">select target folder</p>
 
 		<div class="space-y-2 max-h-72 overflow-auto">
-			<button class="btn-ghost w-full text-left" onclick={() => dispatch('choose', { folderId: null })}>
-				No folder
-			</button>
+            {#if folders.length === 0}
+                <button
+                    class="btn-ghost w-full text-left"
+                    onclick={() => dispatch('choose', { folderId: null })}
+                >
+                    No folder
+                </button>
+            {/if}
 
-			{#each folders as folder (folder.id)}
-				<button class="btn-ghost w-full text-left" onclick={() => dispatch('choose', { folderId: folder.id })}>
-					{folder.name}
-				</button>
-			{/each}
-		</div>
-	</div>
+            {#each folders as folder (folder.id)}
+                <button
+                    class="btn-ghost w-full text-left"
+                    onclick={() => dispatch('choose', { folderId: folder.id })}
+                >
+                    {folder.name}
+                </button>
+            {/each}
+        </div>	
+    </div>
 </div>
