@@ -50,3 +50,5 @@ export type UpdateLinkPayload = Partial<CreateLinkPayload>;
 export type CreateFolderPayload = {
   name: string;
 };
+
+export type UpdateFolderPayload = Partial<CreateFolderPayload>;

@@ -124,5 +124,16 @@ export const api = {
   },
 
   deleteLink: (id: string) =>
-    request<void>(`/api/links/${id}`, { method: 'DELETE' })
+    request<void>(`/api/links/${id}`, { method: 'DELETE' }),
+
+  updateFolder: async (id: string, payload: UpdateFolderPayload): Promise<FolderItem> => {
+    const raw = await request<BackendFolder>(`/api/folders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+    return mapFolderFromBackend(raw);
+  },
+
+  deleteFolder: (id: string) =>
+    request<void>(`/api/folders/${id}`, { method: 'DELETE' }),
 };
