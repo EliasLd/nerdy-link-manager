@@ -30,6 +30,10 @@
 	let selectedLink = $state<LinkItem | null>(null);
 	let selectedFolder = $state<FolderItem | null>(null);
 
+    let showRenameFolderModal = $state(false);
+    let showDeleteFolderModal = $state(false);
+    let folderActionTarget = $state<FolderItem | null>(null);
+
 	onMount(async () => {
 		if (!isAuthenticated()) {
 			await goto('/auth');
@@ -166,6 +170,60 @@
 		}
 	}
 
+    function openRenameFolder(folder: FolderItem) {
+        folderActionTarget = folder;
+        showRenameFolderModal = true;
+    }
+
+    function openDeleteFolder(folder: FolderItem) {
+        folderActionTarget = folder;
+        showDeleteFolderModal = true;
+    }
+
+    async function renameFolder(e: CustomEvent<CreateFolderPayload>) {
+        if (!folderActionTarget) return;
+        try {
+            await api.updateFolder(folderActionTarget.id, { name: e.detail.name });
+            showRenameFolderModal = false;
+            folderActionTarget = null;
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to rename folder';
+        }
+    }
+
+    async function deleteFolder() {
+        if (!folderActionTarget) return;
+        try {
+            await api.deleteFolder(folderActionTarget.id);
+
+            // si on était dans ce folder, revenir au dashboard normal
+            if (selectedFolder?.id === folderActionTarget.id) {
+                selectedFolder = null;
+            }
+
+            showDeleteFolderModal = false;
+            folderActionTarget = null;
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to delete folder';
+        }
+    }
+
+    async function removeFromFolder(link: LinkItem) {
+        try {
+            await api.updateLink(link.id, {
+                name: link.name,
+                url: link.url,
+                description: link.description ?? undefined,
+                folderId: null
+            });
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to remove from folder';
+        }
+    }
+
 	async function doLogout() {
 		logout();
 		await goto('/auth');
@@ -202,8 +260,13 @@
 	{:else}
 		<div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
 			{#each folders as folder (folder.id)}
-				<FolderCard folder={folder} on:open={(e) => openFolder(e.detail)} />
-			{/each}
+                <FolderCard
+                    folder={folder}
+                    on:open={(e) => openFolder(e.detail)}
+                    on:rename={(e) => openRenameFolder(e.detail)}
+                    on:delete={(e) => openDeleteFolder(e.detail)}
+                />			
+            {/each}
 
 			{#each visibleLinks as link (link.id)}
 				<LinkCompactCard
@@ -213,6 +276,7 @@
 					on:edit={(e) => openEdit(e.detail)}
 					on:addToFolder={(e) => openAddToFolder(e.detail)}
 					on:delete={(e) => openDelete(e.detail)}
+	                on:removeFromFolder={(e) => removeFromFolder(e.detail)}
 				/>
 			{/each}
 		</div>
@@ -255,6 +319,24 @@
 		on:open={(e) => openLink(e.detail)}
 		on:edit={(e) => { showDetailsModal = false; openEdit(e.detail); }}
 		on:delete={(e) => { showDetailsModal = false; openDelete(e.detail); }}
+	/>
+{/if}
+
+{#if showRenameFolderModal && folderActionTarget}
+	<FolderModal
+		mode="edit"
+		initial={folderActionTarget}
+		on:close={() => { showRenameFolderModal = false; folderActionTarget = null; }}
+		on:save={renameFolder}
+	/>
+{/if}
+
+{#if showDeleteFolderModal && folderActionTarget}
+	<ConfirmDialog
+		title="Delete folder"
+		message={`Delete "${folderActionTarget.name}"? Links inside will be moved back to the main dashboard.`}
+		on:close={() => { showDeleteFolderModal = false; folderActionTarget = null; }}
+		on:confirm={deleteFolder}
 	/>
 {/if}
 
