@@ -11,6 +11,7 @@
         edit: LinkItem;
         delete: LinkItem;
         addToFolder: LinkItem;
+        removeFromFolder: LinkItem;
     }>();
 
 	let menuOpen = $state(false);
@@ -140,17 +141,30 @@
             }}
         >
             Add to folder
-</button>
+        </button>
 
-<button
-	class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
-	onclick={() => {
-		closeMenu();
-		dispatch('delete', link);
-	}}
->
-	Delete
-</button>        </div>
+        {#if link.folderId}
+            <button
+                class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
+                onclick={() => {
+                    closeMenu();
+                    dispatch('removeFromFolder', link);
+                }}
+            >
+                Remove from folder
+            </button>
+        {/if}
+
+        <button
+            class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
+            onclick={() => {
+                closeMenu();
+                dispatch('delete', link);
+            }}
+        >
+	        Delete
+        </button>        
+    </div>
 	{/if}
 
 	<button class="w-full aspect-square grid place-items-center" onclick={() => dispatch('open', link)}>
