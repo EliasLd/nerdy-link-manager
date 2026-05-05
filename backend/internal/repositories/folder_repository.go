@@ -103,8 +103,24 @@ func (r *sqliteFolderRepository) Update(ctx context.Context, userID, folderID in
 }
 
 func (r *sqliteFolderRepository) Delete(ctx context.Context, userID, folderID int64) error {
-	q := `DELETE FROM folders WHERE id = ? AND user_id = ?`
-	res, err := r.db.ExecContext(ctx, q, folderID, userID)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1) unlink links
+	_, err = tx.ExecContext(ctx, `
+		UPDATE links
+		SET folder_id = NULL
+		WHERE folder_id = ? AND user_id = ?
+	`, folderID, userID)
+	if err != nil {
+		return err
+	}
+
+	// 2) delete folder
+	res, err := tx.ExecContext(ctx, `DELETE FROM folders WHERE id = ? AND user_id = ?`, folderID, userID)
 	if err != nil {
 		return err
 	}
@@ -115,5 +131,6 @@ func (r *sqliteFolderRepository) Delete(ctx context.Context, userID, folderID in
 	if ra == 0 {
 		return sql.ErrNoRows
 	}
-	return nil
+
+	return tx.Commit()
 }

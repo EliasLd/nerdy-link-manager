@@ -18,6 +18,10 @@ func New(dbPath string) (*Database, error) {
 		return nil, fmt.Errorf("Failed to open db: %w", err)
 	}
 
+	if _, err := db.Exec(`PRAGMA foreign_keys = ON;`); err != nil {
+		return nil, fmt.Errorf("Failed to enable sqlite foreign keys: %w", err)
+	}
+
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("Failed to connect to db: %w", err)
 	}

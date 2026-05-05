@@ -10,6 +10,14 @@ export type BackendLinkItem = {
   created_at: string;
   updated_at: string;
   click_count: number;
+  folder_id?: number | null;
+};
+
+export type BackendFolder = {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type LinkItem = {
@@ -20,12 +28,27 @@ export type LinkItem = {
   createdAt?: string;
   updatedAt?: string;
   clicks?: number;
+  folderId?: string | null;
+};
+
+export type FolderItem = {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type CreateLinkPayload = {
   name: string;
   url: string;
   description?: string;
+  folderId?: number | null;
 };
 
 export type UpdateLinkPayload = Partial<CreateLinkPayload>;
+
+export type CreateFolderPayload = {
+  name: string;
+};
+
+export type UpdateFolderPayload = Partial<CreateFolderPayload>;

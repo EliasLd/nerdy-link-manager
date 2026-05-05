@@ -4,7 +4,10 @@ import type {
   BackendLinkItem,
   LinkItem,
   CreateLinkPayload,
-  UpdateLinkPayload
+  UpdateLinkPayload,
+  BackendFolder,
+  FolderItem,
+  CreateFolderPayload
 } from '$lib/types';
 
 const API_BASE = env.PUBLIC_API_URL;
@@ -21,7 +24,17 @@ function mapLinkFromBackend(item: BackendLinkItem): LinkItem {
     description: item.description ?? null,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
-    clicks: item.click_count
+    clicks: item.click_count,
+    folderId: item.folder_id != null ? String(item.folder_id) : null
+  };
+}
+
+function mapFolderFromBackend(item: BackendFolder): FolderItem {
+  return {
+    id: String(item.id),
+    name: item.name,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at
   };
 }
 
@@ -29,7 +42,8 @@ function toBackendPayload(payload: CreateLinkPayload | UpdateLinkPayload) {
   return {
     title: payload.name,
     url: payload.url,
-    description: payload.description ?? null
+    description: payload.description ?? null,
+    folder_id: payload.folderId != null ? Number(payload.folderId) : null
   };
 }
 
@@ -68,8 +82,25 @@ export const api = {
       body: JSON.stringify({ email, password })
     }),
 
-  getLinks: async (withStats = true): Promise<LinkItem[]> => {
-    const raw = await request<BackendLinkItem[]>(`/api/links${withStats ? '?stats=true' : ''}`);
+  getFolders: async (): Promise<FolderItem[]> => {
+    const raw = await request<BackendFolder[]>('/api/folders');
+    return raw.map(mapFolderFromBackend);
+  },
+
+  createFolder: async (payload: CreateFolderPayload): Promise<FolderItem> => {
+    const raw = await request<BackendFolder>('/api/folders', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return mapFolderFromBackend(raw);
+  },
+
+  getLinks: async (withStats = true, folderId?: string | null): Promise<LinkItem[]> => {
+    const params = new URLSearchParams();
+    if (withStats) params.set('stats', 'true');
+    if (folderId) params.set('folder_id', folderId);
+    const qs = params.toString();
+    const raw = await request<BackendLinkItem[]>(`/api/links${qs ? `?${qs}` : ''}`);
     return raw.map(mapLinkFromBackend);
   },
 
@@ -93,7 +124,16 @@ export const api = {
   },
 
   deleteLink: (id: string) =>
-    request<void>(`/api/links/${id}`, {
-      method: 'DELETE'
-    })
+    request<void>(`/api/links/${id}`, { method: 'DELETE' }),
+
+  updateFolder: async (id: string, payload: UpdateFolderPayload): Promise<FolderItem> => {
+    const raw = await request<BackendFolder>(`/api/folders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+    return mapFolderFromBackend(raw);
+  },
+
+  deleteFolder: (id: string) =>
+    request<void>(`/api/folders/${id}`, { method: 'DELETE' }),
 };
