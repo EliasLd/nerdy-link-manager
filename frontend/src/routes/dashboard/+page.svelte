@@ -234,6 +234,25 @@
 	async function goToRegister() {
 		await goto('/register');
 	}
+
+    async function dropLinkOnFolder(e: CustomEvent<{ linkId: string; folder: FolderItem }>) {
+        const { linkId, folder } = e.detail;
+        const link = links.find((l) => l.id === linkId);
+        if (!link) return;
+
+        try {
+            await api.updateLink(link.id, {
+                name: link.name,
+                url: link.url,
+                description: link.description ?? undefined,
+                folderId: Number(folder.id)
+            });
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (err) {
+            error = err instanceof Error ? err.message : 'Failed to move link to folder';
+        }
+    }
+
 </script>
 
 <main class="min-h-screen px-4 py-8 max-w-5xl mx-auto">
@@ -264,13 +283,13 @@
 			{#if selectedFolder}
 				{#each folders as folder (folder.id)}
 					{#if folder.id === selectedFolder.id}
-						<FolderCard
-							folder={folder}
-							on:open={(e) => openFolder(e.detail)}
-							on:rename={(e) => openRenameFolder(e.detail)}
-							on:delete={(e) => openDeleteFolder(e.detail)}
-						/>
-
+                        <FolderCard
+                            folder={folder}
+                            on:open={(e) => openFolder(e.detail)}
+                            on:rename={(e) => openRenameFolder(e.detail)}
+                            on:delete={(e) => openDeleteFolder(e.detail)}
+                            on:dropLink={dropLinkOnFolder}
+                        />
 						{#each visibleLinks as link (link.id)}
 							<LinkCompactCard
 								{link}
@@ -288,6 +307,7 @@
 							on:open={(e) => openFolder(e.detail)}
 							on:rename={(e) => openRenameFolder(e.detail)}
 							on:delete={(e) => openDeleteFolder(e.detail)}
+                            on:dropLink={dropLinkOnFolder}
 						/>
 					{/if}
 				{/each}
@@ -298,6 +318,7 @@
 						on:open={(e) => openFolder(e.detail)}
 						on:rename={(e) => openRenameFolder(e.detail)}
 						on:delete={(e) => openDeleteFolder(e.detail)}
+                        on:dropLink={dropLinkOnFolder}
 					/>
 				{/each}
 
