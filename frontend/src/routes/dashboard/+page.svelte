@@ -253,6 +253,40 @@
         }
     }
 
+    let allLinksDragOver = $state(false);
+
+    function onAllLinksDragOver(e: DragEvent) {
+        e.preventDefault();
+        allLinksDragOver = true;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onAllLinksDragLeave() {
+        allLinksDragOver = false;
+    }
+
+    async function onAllLinksDrop(e: DragEvent) {
+        e.preventDefault();
+        allLinksDragOver = false;
+
+        const linkId = e.dataTransfer?.getData('text/plain');
+        if (!linkId) return;
+
+        const link = links.find((l) => l.id === linkId);
+        if (!link) return;
+
+        try {
+            await api.updateLink(link.id, {
+                name: link.name,
+                url: link.url,
+                description: link.description ?? undefined,
+                folderId: null
+            });
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (err) {
+            error = err instanceof Error ? err.message : 'Failed to move link to all links';
+        }
+    }
 </script>
 
 <main class="min-h-screen px-4 py-8 max-w-5xl mx-auto">
@@ -271,8 +305,16 @@
 	</header>
 
 	{#if selectedFolder}
-		<button class="btn-ghost mb-4" onclick={clearFolderFilter}>← All links</button>
-	{/if}
+        <button
+            class={`btn-ghost mb-4 transition ${allLinksDragOver ? 'border-cyan-300/80 bg-cyan-500/10 text-cyan-200' : ''}`}
+            onclick={clearFolderFilter}
+            ondragover={onAllLinksDragOver}
+            ondragleave={onAllLinksDragLeave}
+            ondrop={onAllLinksDrop}
+        >
+            ← All links
+        </button>    
+    {/if}
 
 	{#if loading}
 		<p class="text-gray-400">Loading...</p>
