@@ -8,6 +8,7 @@
 		open: FolderItem;
 		rename: FolderItem;
 		delete: FolderItem;
+	    dropLink: { linkId: string; folder: FolderItem };
 	}>();
 
 	let menuOpen = $state(false);
@@ -49,6 +50,25 @@
 	function handleEscape(e: KeyboardEvent) { if (e.key === 'Escape') closeMenu(); }
 	function handleResizeOrScroll() { if (menuOpen) positionMenu(); }
 
+    let dragOver = $state(false);
+
+    function onDragOver(e: DragEvent) {
+        e.preventDefault();
+        dragOver = true;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onDragLeave() {
+        dragOver = false;
+    }
+
+    function onDrop(e: DragEvent) {
+        e.preventDefault();
+        dragOver = false;
+        const linkId = e.dataTransfer?.getData('text/plain');
+        if (linkId) dispatch('dropLink', { linkId, folder });
+    }
+
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
 		document.addEventListener('keydown', handleEscape);
@@ -64,13 +84,18 @@
 </script>
 
 <div
-	class="relative border border-cyan-500/25 rounded-lg bg-black/30 p-1.5 hover:border-cyan-300/60 transition overflow-visible"
+	class={`relative border rounded-lg bg-black/30 p-1.5 transition overflow-visible ${
+		dragOver ? 'border-cyan-300/80 bg-cyan-500/10' : 'border-cyan-500/25 hover:border-cyan-300/60'
+	}`}
 	role="button"
 	tabindex="0"
 	bind:this={rootRef}
 	onclick={() => dispatch('open', folder)}
->
-	<button
+	ondragover={onDragOver}
+	ondragleave={onDragLeave}
+	ondrop={onDrop}
+>	
+    <button
 		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-sm leading-none"
 		onclick={(e) => { e.stopPropagation(); toggleMenu(); }}
 		aria-label="Open folder menu"
