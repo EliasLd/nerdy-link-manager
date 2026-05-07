@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount, tick } from 'svelte';
 	import type { LinkItem } from '$lib/types';
-	import { getFaviconCandidates } from '$lib/favicon';
+	import { getFaviconCandidates, getCachedFavicon, setCachedFavicon } from '$lib/favicon';
 
 	let { link }: { link: LinkItem } = $props();
 
@@ -20,15 +20,23 @@
 
 	let menuStyle = $state('right: 0.375rem; top: 1.75rem;'); // default
 
-	let faviconSrc = $state(getFaviconCandidates(link.url)[0] ?? '');
+	const cached = getCachedFavicon(link.url);
+	const baseCandidates = getFaviconCandidates(link.url);
+	const candidates = cached
+		? [cached, ...baseCandidates.filter((c) => c !== cached)]
+		: baseCandidates;
+
+	let faviconSrc = $state(candidates[0] ?? '');
 	let faviconIndex = $state(0);
-	const candidates = getFaviconCandidates(link.url);
 
 	function onFaviconError() {
 		faviconIndex += 1;
 		faviconSrc = candidates[faviconIndex] ?? '';
 	}
 
+	function onFaviconLoad() {
+		if (faviconSrc) setCachedFavicon(link.url, faviconSrc);
+	}
 	async function openMenu() {
 		menuOpen = true;
 		await tick();
@@ -100,7 +108,7 @@
     bind:this={rootRef}
 >
 	<button
-		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-sm leading-none"
+		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none"
 		onclick={toggleMenu}
 		aria-label="Open actions menu"
 	>
@@ -169,8 +177,14 @@
 
 	<button class="w-full aspect-square grid place-items-center" onclick={() => dispatch('open', link)}>
     {#if faviconSrc}
-			<img src={faviconSrc} alt="" class="w-7 h-7 rounded-sm" onerror={onFaviconError} />
-		{:else}
+		<img
+            src={faviconSrc}
+            alt=""
+            class="w-10 h-10 rounded-sm"
+            onerror={onFaviconError}
+            onload={onFaviconLoad}
+        />		
+        {:else}
 			<div class="w-7 h-7 rounded-sm bg-cyan-500/20 border border-cyan-500/30" />
 		{/if}
 	</button>

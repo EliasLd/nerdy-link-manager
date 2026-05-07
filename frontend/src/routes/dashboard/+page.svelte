@@ -30,9 +30,11 @@
 	let selectedLink = $state<LinkItem | null>(null);
 	let selectedFolder = $state<FolderItem | null>(null);
 
-    let showRenameFolderModal = $state(false);
-    let showDeleteFolderModal = $state(false);
-    let folderActionTarget = $state<FolderItem | null>(null);
+	let showRenameFolderModal = $state(false);
+	let showDeleteFolderModal = $state(false);
+	let folderActionTarget = $state<FolderItem | null>(null);
+
+	let visibleLinks = $state<LinkItem[]>([]);
 
 	onMount(async () => {
 		if (!isAuthenticated()) {
@@ -42,30 +44,29 @@
 		await loadAll();
 	});
 
-    let visibleLinks = $state<LinkItem[]>([]);
+	async function loadAll(folderId?: string | null) {
+		loading = true;
+		error = '';
+		try {
+			const [allLinks, allFolders] = await Promise.all([
+				api.getLinks(true, folderId ?? undefined),
+				api.getFolders()
+			]);
 
-    async function loadAll(folderId?: string | null) {
-        loading = true;
-        error = '';
-        try {
-            const [allLinks, allFolders] = await Promise.all([
-                api.getLinks(true, folderId ?? undefined),
-                api.getFolders()
-            ]);
+			folders = allFolders;
+			links = allLinks;
 
-            folders = allFolders;
-            links = allLinks;
+			// si aucun folder sélectionné => afficher seulement ceux sans folder
+			visibleLinks = folderId
+				? allLinks
+				: allLinks.filter((l) => !l.folderId);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to load data';
+		} finally {
+			loading = false;
+		}
+	}
 
-            // si aucun folder sélectionné => afficher seulement ceux sans folder
-            visibleLinks = folderId
-                ? allLinks
-                : allLinks.filter((l) => !l.folderId);
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'Failed to load data';
-        } finally {
-            loading = false;
-        }
-    }
 	async function openLink(link: LinkItem) {
 		try {
 			await api.registerClick(link.id);
@@ -142,21 +143,22 @@
 	}
 
 	async function assignFolder(folderId: string | null) {
-        if (!selectedLink) return;
-        try {
-            await api.updateLink(selectedLink.id, {
-              name: selectedLink.name,
-              url: selectedLink.url,
-              description: selectedLink.description ?? undefined,
-              folderId: folderId ? Number(folderId) : null
-            });            
-            showAddToFolder = false;
-            selectedLink = null;
-            await loadAll(selectedFolder?.id ?? null);
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'Failed to update link folder';
-        }
-    }
+		if (!selectedLink) return;
+		try {
+			await api.updateLink(selectedLink.id, {
+				name: selectedLink.name,
+				url: selectedLink.url,
+				description: selectedLink.description ?? undefined,
+				folderId: folderId ? Number(folderId) : null
+			});
+			showAddToFolder = false;
+			selectedLink = null;
+			await loadAll(selectedFolder?.id ?? null);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to update link folder';
+		}
+	}
+
 	async function deleteLink() {
 		if (!selectedLink) return;
 		try {
@@ -170,59 +172,59 @@
 		}
 	}
 
-    function openRenameFolder(folder: FolderItem) {
-        folderActionTarget = folder;
-        showRenameFolderModal = true;
-    }
+	function openRenameFolder(folder: FolderItem) {
+		folderActionTarget = folder;
+		showRenameFolderModal = true;
+	}
 
-    function openDeleteFolder(folder: FolderItem) {
-        folderActionTarget = folder;
-        showDeleteFolderModal = true;
-    }
+	function openDeleteFolder(folder: FolderItem) {
+		folderActionTarget = folder;
+		showDeleteFolderModal = true;
+	}
 
-    async function renameFolder(e: CustomEvent<CreateFolderPayload>) {
-        if (!folderActionTarget) return;
-        try {
-            await api.updateFolder(folderActionTarget.id, { name: e.detail.name });
-            showRenameFolderModal = false;
-            folderActionTarget = null;
-            await loadAll(selectedFolder?.id ?? null);
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'Failed to rename folder';
-        }
-    }
+	async function renameFolder(e: CustomEvent<CreateFolderPayload>) {
+		if (!folderActionTarget) return;
+		try {
+			await api.updateFolder(folderActionTarget.id, { name: e.detail.name });
+			showRenameFolderModal = false;
+			folderActionTarget = null;
+			await loadAll(selectedFolder?.id ?? null);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to rename folder';
+		}
+	}
 
-    async function deleteFolder() {
-        if (!folderActionTarget) return;
-        try {
-            await api.deleteFolder(folderActionTarget.id);
+	async function deleteFolder() {
+		if (!folderActionTarget) return;
+		try {
+			await api.deleteFolder(folderActionTarget.id);
 
-            // si on était dans ce folder, revenir au dashboard normal
-            if (selectedFolder?.id === folderActionTarget.id) {
-                selectedFolder = null;
-            }
+			// si on était dans ce folder, revenir au dashboard normal
+			if (selectedFolder?.id === folderActionTarget.id) {
+				selectedFolder = null;
+			}
 
-            showDeleteFolderModal = false;
-            folderActionTarget = null;
-            await loadAll(selectedFolder?.id ?? null);
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'Failed to delete folder';
-        }
-    }
+			showDeleteFolderModal = false;
+			folderActionTarget = null;
+			await loadAll(selectedFolder?.id ?? null);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to delete folder';
+		}
+	}
 
-    async function removeFromFolder(link: LinkItem) {
-        try {
-            await api.updateLink(link.id, {
-                name: link.name,
-                url: link.url,
-                description: link.description ?? undefined,
-                folderId: null
-            });
-            await loadAll(selectedFolder?.id ?? null);
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'Failed to remove from folder';
-        }
-    }
+	async function removeFromFolder(link: LinkItem) {
+		try {
+			await api.updateLink(link.id, {
+				name: link.name,
+				url: link.url,
+				description: link.description ?? undefined,
+				folderId: null
+			});
+			await loadAll(selectedFolder?.id ?? null);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to remove from folder';
+		}
+	}
 
 	async function doLogout() {
 		logout();
@@ -259,26 +261,58 @@
 		<p class="text-red-400">{error}</p>
 	{:else}
 		<div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
-			{#each folders as folder (folder.id)}
-                <FolderCard
-                    folder={folder}
-                    on:open={(e) => openFolder(e.detail)}
-                    on:rename={(e) => openRenameFolder(e.detail)}
-                    on:delete={(e) => openDeleteFolder(e.detail)}
-                />			
-            {/each}
+			{#if selectedFolder}
+				{#each folders as folder (folder.id)}
+					{#if folder.id === selectedFolder.id}
+						<FolderCard
+							folder={folder}
+							on:open={(e) => openFolder(e.detail)}
+							on:rename={(e) => openRenameFolder(e.detail)}
+							on:delete={(e) => openDeleteFolder(e.detail)}
+						/>
 
-			{#each visibleLinks as link (link.id)}
-				<LinkCompactCard
-					{link}
-					on:open={(e) => openLink(e.detail)}
-					on:details={(e) => openDetails(e.detail)}
-					on:edit={(e) => openEdit(e.detail)}
-					on:addToFolder={(e) => openAddToFolder(e.detail)}
-					on:delete={(e) => openDelete(e.detail)}
-	                on:removeFromFolder={(e) => removeFromFolder(e.detail)}
-				/>
-			{/each}
+						{#each visibleLinks as link (link.id)}
+							<LinkCompactCard
+								{link}
+								on:open={(e) => openLink(e.detail)}
+								on:details={(e) => openDetails(e.detail)}
+								on:edit={(e) => openEdit(e.detail)}
+								on:addToFolder={(e) => openAddToFolder(e.detail)}
+								on:delete={(e) => openDelete(e.detail)}
+								on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+							/>
+						{/each}
+					{:else}
+						<FolderCard
+							folder={folder}
+							on:open={(e) => openFolder(e.detail)}
+							on:rename={(e) => openRenameFolder(e.detail)}
+							on:delete={(e) => openDeleteFolder(e.detail)}
+						/>
+					{/if}
+				{/each}
+			{:else}
+				{#each folders as folder (folder.id)}
+					<FolderCard
+						folder={folder}
+						on:open={(e) => openFolder(e.detail)}
+						on:rename={(e) => openRenameFolder(e.detail)}
+						on:delete={(e) => openDeleteFolder(e.detail)}
+					/>
+				{/each}
+
+				{#each visibleLinks as link (link.id)}
+					<LinkCompactCard
+						{link}
+						on:open={(e) => openLink(e.detail)}
+						on:details={(e) => openDetails(e.detail)}
+						on:edit={(e) => openEdit(e.detail)}
+						on:addToFolder={(e) => openAddToFolder(e.detail)}
+						on:delete={(e) => openDelete(e.detail)}
+						on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+					/>
+				{/each}
+			{/if}
 		</div>
 	{/if}
 </main>
