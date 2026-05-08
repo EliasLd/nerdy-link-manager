@@ -88,6 +88,12 @@
 		if (menuOpen) positionMenu();
 	}
 
+	function onDragStart(e: DragEvent) {
+		if (!e.dataTransfer) return;
+		e.dataTransfer.setData('text/plain', link.id);
+		e.dataTransfer.effectAllowed = 'move';
+	}
+
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
 		document.addEventListener('keydown', handleEscape);
@@ -105,7 +111,9 @@
 
 <div
 	class="relative border border-cyan-500/25 rounded-lg bg-black/30 p-1.5 hover:border-cyan-300/60 transition overflow-visible"
-    bind:this={rootRef}
+	bind:this={rootRef}
+	draggable="true"
+	ondragstart={onDragStart}
 >
 	<button
 		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none"
@@ -183,6 +191,7 @@
             class="w-10 h-10 rounded-sm"
             onerror={onFaviconError}
             onload={onFaviconLoad}
+	        draggable="false"
         />		
         {:else}
 			<div class="w-7 h-7 rounded-sm bg-cyan-500/20 border border-cyan-500/30" />
