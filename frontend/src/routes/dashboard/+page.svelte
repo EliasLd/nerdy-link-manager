@@ -341,6 +341,7 @@
 								on:addToFolder={(e) => openAddToFolder(e.detail)}
 								on:delete={(e) => openDelete(e.detail)}
 								on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+                                on:iconError={(e) => (error = e.detail)}
 							/>
 						{/each}
 					{:else}
@@ -373,6 +374,7 @@
 						on:addToFolder={(e) => openAddToFolder(e.detail)}
 						on:delete={(e) => openDelete(e.detail)}
 						on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+                        on:iconError={(e) => (error = e.detail)}
 					/>
 				{/each}
 			{/if}
