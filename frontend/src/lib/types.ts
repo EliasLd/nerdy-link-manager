@@ -11,6 +11,8 @@ export type BackendLinkItem = {
   updated_at: string;
   click_count: number;
   folder_id?: number | null;
+  custom_icon?: string | null;
+  favicon_url?: string | null;
 };
 
 export type BackendFolder = {
@@ -29,6 +31,8 @@ export type LinkItem = {
   updatedAt?: string;
   clicks?: number;
   folderId?: string | null;
+  customIcon?: string | null;
+  faviconUrl?: string | null;
 };
 
 export type FolderItem = {
@@ -43,6 +47,8 @@ export type CreateLinkPayload = {
   url: string;
   description?: string;
   folderId?: number | null;
+  customIcon?: string | null;
+  faviconUrl?: string | null;
 };
 
 export type UpdateLinkPayload = Partial<CreateLinkPayload>;

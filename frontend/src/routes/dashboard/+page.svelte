@@ -334,16 +334,17 @@
                         />
 						{#each visibleLinks as link (link.id)}
 							<LinkCompactCard
-								{link}
-								on:open={(e) => openLink(e.detail)}
-								on:details={(e) => openDetails(e.detail)}
-								on:edit={(e) => openEdit(e.detail)}
-								on:addToFolder={(e) => openAddToFolder(e.detail)}
-								on:delete={(e) => openDelete(e.detail)}
-								on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+                                {link}
+                                on:open={(e) => openLink(e.detail)}
+                                on:details={(e) => openDetails(e.detail)}
+                                on:edit={(e) => openEdit(e.detail)}
+                                on:addToFolder={(e) => openAddToFolder(e.detail)}
+                                on:delete={(e) => openDelete(e.detail)}
+                                on:removeFromFolder={(e) => removeFromFolder(e.detail)}
                                 on:iconError={(e) => (error = e.detail)}
-							/>
-						{/each}
+                                on:iconUpdated={() => loadAll(selectedFolder?.id ?? null)}
+                            />						
+                        {/each}
 					{:else}
 						<FolderCard
 							folder={folder}
@@ -367,15 +368,16 @@
 
 				{#each visibleLinks as link (link.id)}
 					<LinkCompactCard
-						{link}
-						on:open={(e) => openLink(e.detail)}
-						on:details={(e) => openDetails(e.detail)}
-						on:edit={(e) => openEdit(e.detail)}
-						on:addToFolder={(e) => openAddToFolder(e.detail)}
-						on:delete={(e) => openDelete(e.detail)}
-						on:removeFromFolder={(e) => removeFromFolder(e.detail)}
+                        {link}
+                        on:open={(e) => openLink(e.detail)}
+                        on:details={(e) => openDetails(e.detail)}
+                        on:edit={(e) => openEdit(e.detail)}
+                        on:addToFolder={(e) => openAddToFolder(e.detail)}
+                        on:delete={(e) => openDelete(e.detail)}
+                        on:removeFromFolder={(e) => removeFromFolder(e.detail)}
                         on:iconError={(e) => (error = e.detail)}
-					/>
+                        on:iconUpdated={() => loadAll(selectedFolder?.id ?? null)}
+                    />
 				{/each}
 			{/if}
 		</div>

@@ -12,6 +12,8 @@ type Link struct {
 	URL         string    `json:"url"`
 	Description *string   `json:"description,omitempty"`
 	FolderID    *int64    `json:"folder_id,omitempty"`
+	CustomIcon  *string   `json:"custom_icon,omitempty"`
+	FaviconURL  *string   `json:"favicon_url,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -22,14 +24,12 @@ type LinkWithStats struct {
 }
 
 type LinkRepository interface {
-	// CRUD operations
-	Create(ctx context.Context, userID int64, title, url string, description *string, folderID *int64) (*Link, error)
+	Create(ctx context.Context, userID int64, title, url string, description *string, folderID *int64, customIcon *string, faviconURL *string) (*Link, error)
 	FindByID(ctx context.Context, userID int64, id int64) (*Link, error)
 	FindAll(ctx context.Context, userID int64, folderID *int64) ([]Link, error)
-	Update(ctx context.Context, userID int64, id int64, title, url string, description *string, folderID *int64) (*Link, error)
+	Update(ctx context.Context, userID int64, id int64, title, url string, description *string, folderID *int64, customIcon *string, faviconURL *string) (*Link, error)
 	Delete(ctx context.Context, userID int64, id int64) error
 
-	// Stats operations
 	RecordClick(ctx context.Context, userID int64, linkID int64) error
 	GetLinkStats(ctx context.Context, userID int64, linkID int64) (*LinkWithStats, error)
 	GetAllLinksWithStats(ctx context.Context, userID int64, folderID *int64) ([]LinkWithStats, error)
@@ -43,13 +43,13 @@ func NewLinkRepository(db *sql.DB) LinkRepository {
 	return &sqliteLinkRepository{db: db}
 }
 
-func (r *sqliteLinkRepository) Create(ctx context.Context, userID int64, title, url string, description *string, folderID *int64) (*Link, error) {
+func (r *sqliteLinkRepository) Create(ctx context.Context, userID int64, title, url string, description *string, folderID *int64, customIcon *string, faviconURL *string) (*Link, error) {
 	query := `
-		INSERT INTO links(title, url, description, user_id, folder_id)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO links(title, url, description, user_id, folder_id, custom_icon, favicon_url)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.ExecContext(ctx, query, title, url, description, userID, folderID)
+	result, err := r.db.ExecContext(ctx, query, title, url, description, userID, folderID, customIcon, faviconURL)
 	if err != nil {
 		return nil, err
 	}
@@ -64,18 +64,19 @@ func (r *sqliteLinkRepository) Create(ctx context.Context, userID int64, title, 
 
 func (r *sqliteLinkRepository) FindByID(ctx context.Context, userID int64, id int64) (*Link, error) {
 	query := `
-		SELECT id, title, url, description, folder_id, created_at, updated_at
+		SELECT id, title, url, description, folder_id, custom_icon, favicon_url, created_at, updated_at
 		FROM links
 		WHERE id = ? AND user_id = ?
 	`
-
 	row := r.db.QueryRowContext(ctx, query, id, userID)
 
 	var link Link
 	var description sql.NullString
 	var folderID sql.NullInt64
+	var customIcon sql.NullString
+	var faviconURL sql.NullString
 
-	err := row.Scan(&link.ID, &link.Title, &link.URL, &description, &folderID, &link.CreatedAt, &link.UpdatedAt)
+	err := row.Scan(&link.ID, &link.Title, &link.URL, &description, &folderID, &customIcon, &faviconURL, &link.CreatedAt, &link.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +87,12 @@ func (r *sqliteLinkRepository) FindByID(ctx context.Context, userID int64, id in
 	if folderID.Valid {
 		link.FolderID = &folderID.Int64
 	}
+	if customIcon.Valid {
+		link.CustomIcon = &customIcon.String
+	}
+	if faviconURL.Valid {
+		link.FaviconURL = &faviconURL.String
+	}
 
 	return &link, nil
 }
@@ -93,7 +100,7 @@ func (r *sqliteLinkRepository) FindByID(ctx context.Context, userID int64, id in
 // Retrieves all links, sorted by creation date DESC
 func (r *sqliteLinkRepository) FindAll(ctx context.Context, userID int64, folderID *int64) ([]Link, error) {
 	query := `
-		SELECT id, title, url, description, folder_id, created_at, updated_at
+		SELECT id, title, url, description, folder_id, custom_icon, favicon_url, created_at, updated_at
 		FROM links
 		WHERE user_id = ?
 	`
@@ -118,8 +125,10 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context, userID int64, folder
 		var link Link
 		var description sql.NullString
 		var folderIDNull sql.NullInt64
+		var customIcon sql.NullString
+		var faviconURL sql.NullString
 
-		err := rows.Scan(&link.ID, &link.Title, &link.URL, &description, &folderIDNull, &link.CreatedAt, &link.UpdatedAt)
+		err := rows.Scan(&link.ID, &link.Title, &link.URL, &description, &folderIDNull, &customIcon, &faviconURL, &link.CreatedAt, &link.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -130,6 +139,12 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context, userID int64, folder
 		if folderIDNull.Valid {
 			link.FolderID = &folderIDNull.Int64
 		}
+		if customIcon.Valid {
+			link.CustomIcon = &customIcon.String
+		}
+		if faviconURL.Valid {
+			link.FaviconURL = &faviconURL.String
+		}
 
 		links = append(links, link)
 	}
@@ -137,14 +152,14 @@ func (r *sqliteLinkRepository) FindAll(ctx context.Context, userID int64, folder
 	return links, rows.Err()
 }
 
-func (r *sqliteLinkRepository) Update(ctx context.Context, userID int64, id int64, title, url string, description *string, folderID *int64) (*Link, error) {
+func (r *sqliteLinkRepository) Update(ctx context.Context, userID int64, id int64, title, url string, description *string, folderID *int64, customIcon *string, faviconURL *string) (*Link, error) {
 	query := `
 		UPDATE links
-		SET title = ?, url = ?, description = ?, folder_id = ?, updated_at = CURRENT_TIMESTAMP
+		SET title = ?, url = ?, description = ?, folder_id = ?, custom_icon = ?, favicon_url = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND user_id = ?
 	`
 
-	res, err := r.db.ExecContext(ctx, query, title, url, description, folderID, id, userID)
+	res, err := r.db.ExecContext(ctx, query, title, url, description, folderID, customIcon, faviconURL, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +222,7 @@ func (r *sqliteLinkRepository) RecordClick(ctx context.Context, userID int64, li
 func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, linkID int64) (*LinkWithStats, error) {
 	query := `
 		SELECT
-			l.id, l.title, l.url, l.description, l.folder_id, l.created_at, l.updated_at,
+			l.id, l.title, l.url, l.description, l.folder_id, l.custom_icon, l.favicon_url, l.created_at, l.updated_at,
 			COUNT(lc.id) as click_count
 		FROM links l
 		LEFT JOIN link_clicks lc ON l.id = lc.link_id
@@ -220,6 +235,8 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, l
 	var linkStats LinkWithStats
 	var description sql.NullString
 	var folderID sql.NullInt64
+	var customIcon sql.NullString
+	var faviconURL sql.NullString
 
 	err := row.Scan(
 		&linkStats.ID,
@@ -227,6 +244,8 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, l
 		&linkStats.URL,
 		&description,
 		&folderID,
+		&customIcon,
+		&faviconURL,
 		&linkStats.CreatedAt,
 		&linkStats.UpdatedAt,
 		&linkStats.ClickCount,
@@ -241,6 +260,12 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, l
 	if folderID.Valid {
 		linkStats.FolderID = &folderID.Int64
 	}
+	if customIcon.Valid {
+		linkStats.CustomIcon = &customIcon.String
+	}
+	if faviconURL.Valid {
+		linkStats.FaviconURL = &faviconURL.String
+	}
 
 	return &linkStats, nil
 }
@@ -249,7 +274,7 @@ func (r *sqliteLinkRepository) GetLinkStats(ctx context.Context, userID int64, l
 func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context, userID int64, folderID *int64) ([]LinkWithStats, error) {
 	query := `
 		SELECT
-			l.id, l.title, l.url, l.description, l.folder_id, l.created_at, l.updated_at,
+			l.id, l.title, l.url, l.description, l.folder_id, l.custom_icon, l.favicon_url, l.created_at, l.updated_at,
 			COUNT(lc.id) as click_count
 		FROM links l
 		LEFT JOIN link_clicks lc ON l.id = lc.link_id
@@ -279,6 +304,8 @@ func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context, userID 
 		var linkStats LinkWithStats
 		var description sql.NullString
 		var folderIDNull sql.NullInt64
+		var customIcon sql.NullString
+		var faviconURL sql.NullString
 
 		err := rows.Scan(
 			&linkStats.ID,
@@ -286,6 +313,8 @@ func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context, userID 
 			&linkStats.URL,
 			&description,
 			&folderIDNull,
+			&customIcon,
+			&faviconURL,
 			&linkStats.CreatedAt,
 			&linkStats.UpdatedAt,
 			&linkStats.ClickCount,
@@ -299,6 +328,12 @@ func (r *sqliteLinkRepository) GetAllLinksWithStats(ctx context.Context, userID 
 		}
 		if folderIDNull.Valid {
 			linkStats.FolderID = &folderIDNull.Int64
+		}
+		if customIcon.Valid {
+			linkStats.CustomIcon = &customIcon.String
+		}
+		if faviconURL.Valid {
+			linkStats.FaviconURL = &faviconURL.String
 		}
 
 		links = append(links, linkStats)

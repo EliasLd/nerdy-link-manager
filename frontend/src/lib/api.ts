@@ -25,7 +25,9 @@ function mapLinkFromBackend(item: BackendLinkItem): LinkItem {
     createdAt: item.created_at,
     updatedAt: item.updated_at,
     clicks: item.click_count,
-    folderId: item.folder_id != null ? String(item.folder_id) : null
+    folderId: item.folder_id != null ? String(item.folder_id) : null,
+    customIcon: item.custom_icon ?? null,
+    faviconUrl: item.favicon_url ?? null
   };
 }
 
@@ -43,7 +45,9 @@ function toBackendPayload(payload: CreateLinkPayload | UpdateLinkPayload) {
     title: payload.name,
     url: payload.url,
     description: payload.description ?? null,
-    folder_id: payload.folderId != null ? Number(payload.folderId) : null
+    folder_id: payload.folderId != null ? Number(payload.folderId) : null,
+    custom_icon: payload.customIcon ?? null,
+    favicon_url: payload.faviconUrl ?? null
   };
 }
 
