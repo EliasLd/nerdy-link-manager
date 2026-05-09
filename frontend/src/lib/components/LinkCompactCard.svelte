@@ -142,6 +142,12 @@
 		return canvas.toDataURL('image/png', 0.92);
 	}
 
+	function onDragStart(e: DragEvent) {
+		if (!e.dataTransfer) return;
+		e.dataTransfer.setData('text/plain', link.id);
+		e.dataTransfer.effectAllowed = 'move';
+	}
+
     async function onIconFile(e: Event) {
         const input = e.currentTarget as HTMLInputElement;
         const file = input.files?.[0];
@@ -211,8 +217,10 @@
 <div
 	class="relative border border-cyan-500/25 rounded-lg bg-black/30 p-1.5 hover:border-cyan-300/60 transition overflow-visible"
 	bind:this={rootRef}
->
-	<button
+	draggable="true"
+	ondragstart={onDragStart}
+>	
+    <button
 		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none"
 		onclick={toggleMenu}
 		aria-label="Open actions menu"
