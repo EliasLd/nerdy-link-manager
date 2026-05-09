@@ -13,7 +13,10 @@ var (
 	ErrInvalidURL   = errors.New("invalid URL format")
 	ErrEmptyTitle   = errors.New("title cannot be empty")
 	ErrLinkNotFound = errors.New("link not found")
+	ErrIconTooLarge = errors.New("custom icon too large")
 )
+
+const maxIconLen = 300_000
 
 type LinkService struct {
 	repo       repositories.LinkRepository
@@ -27,14 +30,14 @@ func NewLinkService(repo repositories.LinkRepository, folderRepo repositories.Fo
 	}
 }
 
-// Validates data and creates new link
-// folderID is optional (nil => no folder)
 func (s *LinkService) CreateLink(
 	ctx context.Context,
 	userID int64,
 	title, rawURL string,
 	description *string,
 	folderID *int64,
+	customIcon *string,
+	faviconURL *string,
 ) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
@@ -45,7 +48,6 @@ func (s *LinkService) CreateLink(
 		return nil, err
 	}
 
-	// Clean description if exists
 	if description != nil {
 		trimmed := strings.TrimSpace(*description)
 		if trimmed == "" {
@@ -55,14 +57,33 @@ func (s *LinkService) CreateLink(
 		}
 	}
 
-	// Validate folder ownership if provided
+	if customIcon != nil {
+		trimmed := strings.TrimSpace(*customIcon)
+		if trimmed == "" {
+			customIcon = nil
+		} else if len(trimmed) > maxIconLen {
+			return nil, ErrIconTooLarge
+		} else {
+			customIcon = &trimmed
+		}
+	}
+
+	if faviconURL != nil {
+		trimmed := strings.TrimSpace(*faviconURL)
+		if trimmed == "" {
+			faviconURL = nil
+		} else {
+			faviconURL = &trimmed
+		}
+	}
+
 	if folderID != nil {
 		if _, err := s.folderRepo.FindByID(ctx, userID, *folderID); err != nil {
 			return nil, ErrFolderNotFound
 		}
 	}
 
-	return s.repo.Create(ctx, userID, title, rawURL, description, folderID)
+	return s.repo.Create(ctx, userID, title, rawURL, description, folderID, customIcon, faviconURL)
 }
 
 func (s *LinkService) GetLink(ctx context.Context, userID int64, id int64) (*repositories.Link, error) {
@@ -80,6 +101,8 @@ func (s *LinkService) UpdateLink(
 	title, rawURL string,
 	description *string,
 	folderID *int64,
+	customIcon *string,
+	faviconURL *string,
 ) (*repositories.Link, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
@@ -99,14 +122,33 @@ func (s *LinkService) UpdateLink(
 		}
 	}
 
-	// folderID nil is valid => unlink from folder
+	if customIcon != nil {
+		trimmed := strings.TrimSpace(*customIcon)
+		if trimmed == "" {
+			customIcon = nil
+		} else if len(trimmed) > maxIconLen {
+			return nil, ErrIconTooLarge
+		} else {
+			customIcon = &trimmed
+		}
+	}
+
+	if faviconURL != nil {
+		trimmed := strings.TrimSpace(*faviconURL)
+		if trimmed == "" {
+			faviconURL = nil
+		} else {
+			faviconURL = &trimmed
+		}
+	}
+
 	if folderID != nil {
 		if _, err := s.folderRepo.FindByID(ctx, userID, *folderID); err != nil {
 			return nil, ErrFolderNotFound
 		}
 	}
 
-	return s.repo.Update(ctx, userID, id, title, rawURL, description, folderID)
+	return s.repo.Update(ctx, userID, id, title, rawURL, description, folderID, customIcon, faviconURL)
 }
 
 func (s *LinkService) DeleteLink(ctx context.Context, userID int64, id int64) error {
@@ -130,23 +172,21 @@ func (s *LinkService) GetAllLinksWithStats(ctx context.Context, userID int64, fo
 	return s.repo.GetAllLinksWithStats(ctx, userID, folderID)
 }
 
-// Checks that URL is valid and complete
 func validateURL(rawURL string) error {
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" {
 		return ErrInvalidURL
 	}
 
-	// Parse URL to check its validity
 	parsedURL, err := url.ParseRequestURI(rawURL)
 	if err != nil {
 		return ErrInvalidURL
 	}
 
-	// Check that url contains a valid scheme (http/https)
 	if parsedURL.Scheme == "" || parsedURL.Host == "" {
 		return ErrInvalidURL
 	}
 
 	return nil
 }
+

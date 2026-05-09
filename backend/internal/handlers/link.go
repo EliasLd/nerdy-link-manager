@@ -25,6 +25,8 @@ type CreateLinkRequest struct {
 	URL         string  `json:"url"`
 	Description *string `json:"description,omitempty"`
 	FolderID    *int64  `json:"folder_id,omitempty"`
+	CustomIcon  *string `json:"custom_icon,omitempty"`
+	FaviconURL  *string `json:"favicon_url,omitempty"`
 }
 
 type UpdateLinkRequest struct {
@@ -32,6 +34,8 @@ type UpdateLinkRequest struct {
 	URL         string  `json:"url"`
 	Description *string `json:"description,omitempty"`
 	FolderID    *int64  `json:"folder_id,omitempty"`
+	CustomIcon  *string `json:"custom_icon,omitempty"`
+	FaviconURL  *string `json:"favicon_url,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -52,7 +56,16 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.CreateLink(r.Context(), userID, req.Title, req.URL, req.Description, req.FolderID)
+	link, err := h.service.CreateLink(
+		r.Context(),
+		userID,
+		req.Title,
+		req.URL,
+		req.Description,
+		req.FolderID,
+		req.CustomIcon,
+		req.FaviconURL,
+	)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -63,9 +76,6 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 
 // GET /links
 func (h *LinkHandler) GetAllLinks(w http.ResponseWriter, r *http.Request) {
-	// Optional query params:
-	// - ?stats=true to include links statistics
-	// - ?folder_id=123 to filter links by folder
 	includeStats := r.URL.Query().Get("stats") == "true"
 
 	var folderID *int64
@@ -163,7 +173,17 @@ func (h *LinkHandler) UpdateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.UpdateLink(r.Context(), userID, id, req.Title, req.URL, req.Description, req.FolderID)
+	link, err := h.service.UpdateLink(
+		r.Context(),
+		userID,
+		id,
+		req.Title,
+		req.URL,
+		req.Description,
+		req.FolderID,
+		req.CustomIcon,
+		req.FaviconURL,
+	)
 	if err != nil {
 		handleServiceError(w, err)
 		return
@@ -226,11 +246,10 @@ func (h *LinkHandler) TrackClick(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "click recorded"})
 }
 
-// Extracts numerical id from a path, like /links/123
 func extractIDFromPath(path, prefix string) (int64, error) {
 	idStr := strings.TrimPrefix(path, prefix)
 	if idStr == path {
-		return 0, strconv.ErrSyntax // prefix not found
+		return 0, strconv.ErrSyntax
 	}
 
 	idStr = strings.TrimSuffix(idStr, "/click")
@@ -238,14 +257,12 @@ func extractIDFromPath(path, prefix string) (int64, error) {
 	return strconv.ParseInt(idStr, 10, 64)
 }
 
-// Encodes a response in JSON with the appropriate status
 func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-// Maps service errors to HTTP status
 func handleServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, services.ErrInvalidURL):
@@ -256,6 +273,8 @@ func handleServiceError(w http.ResponseWriter, err error) {
 		respondJSON(w, http.StatusNotFound, ErrorResponse{Error: "link not found"})
 	case errors.Is(err, services.ErrFolderNotFound):
 		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "folder not found"})
+	case errors.Is(err, services.ErrIconTooLarge):
+		respondJSON(w, http.StatusBadRequest, ErrorResponse{Error: "custom icon too large"})
 	default:
 		respondJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 	}
