@@ -1,26 +1,21 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount, tick } from 'svelte';
 	import type { LinkItem } from '$lib/types';
-	import {
-		getFaviconCandidates,
-		getCachedFavicon,
-		setCachedFavicon,
-		getCustomIcon,
-		setCustomIcon,
-		removeCustomIcon
-	} from '$lib/favicon';
+	import { getFaviconCandidates } from '$lib/favicon';
+	import { api } from '$lib/api';
 
 	let { link }: { link: LinkItem } = $props();
 
-	const dispatch = createEventDispatcher<{
-		open: LinkItem;
-		details: LinkItem;
-		edit: LinkItem;
-		delete: LinkItem;
-		addToFolder: LinkItem;
-		removeFromFolder: LinkItem;
-		iconError: string;
-	}>();
+    const dispatch = createEventDispatcher<{
+        open: LinkItem;
+        details: LinkItem;
+        edit: LinkItem;
+        delete: LinkItem;
+        addToFolder: LinkItem;
+        removeFromFolder: LinkItem;
+        iconError: string;
+        iconUpdated: void;
+    }>();
 
 	const MAX_ICON_SIZE = 64;
 	const MAX_ICON_BYTES = 200 * 1024;
@@ -32,35 +27,38 @@
 
 	let menuStyle = $state('right: 0.375rem; top: 1.75rem;');
 
-	let customIcon = $state<string | null>(getCustomIcon(link.id));
-	let candidates = $state<string[]>([]);
-	let faviconSrc = $state('');
+	const baseCandidates = getFaviconCandidates(link.url);
+	const candidates = link.customIcon
+		? [link.customIcon]
+		: [
+				...(link.faviconUrl ? [link.faviconUrl] : []),
+				...baseCandidates.filter((c) => c !== link.faviconUrl)
+		  ];
+
+	let faviconSrc = $state(candidates[0] ?? '');
 	let faviconIndex = $state(0);
 
-	function rebuildFavicon() {
-		if (customIcon) {
-			candidates = [customIcon];
-		} else {
-			const cached = getCachedFavicon(link.url);
-			const base = getFaviconCandidates(link.url);
-			candidates = cached ? [cached, ...base.filter((c) => c !== cached)] : base;
-		}
-		faviconIndex = 0;
-		faviconSrc = candidates[0] ?? '';
-	}
-
-	rebuildFavicon();
-
 	function onFaviconError() {
-		if (customIcon) return;
+		if (link.customIcon) return;
 		faviconIndex += 1;
 		faviconSrc = candidates[faviconIndex] ?? '';
 	}
 
-	function onFaviconLoad() {
-		if (!customIcon && faviconSrc) setCachedFavicon(link.url, faviconSrc);
-	}
+    async function onFaviconLoad() {
+        if (link.customIcon || !faviconSrc) return;
 
+        if (faviconSrc !== link.faviconUrl) {
+            try {
+                await api.updateLink(link.id, {
+                    name: link.name,
+                    url: link.url,
+                    description: link.description ?? undefined,
+                    folderId: link.folderId ? Number(link.folderId) : null,
+                    faviconUrl: faviconSrc
+                });
+            } catch {}
+        }
+    }
 	async function openMenu() {
 		menuOpen = true;
 		await tick();
@@ -110,16 +108,6 @@
 		if (menuOpen) positionMenu();
 	}
 
-	function onDragStart(e: DragEvent) {
-		if (!e.dataTransfer) return;
-		e.dataTransfer.setData('text/plain', link.id);
-		e.dataTransfer.effectAllowed = 'move';
-	}
-
-	function triggerIconPicker() {
-		fileInput?.click();
-	}
-
 	function fileToDataUrl(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
@@ -154,35 +142,53 @@
 		return canvas.toDataURL('image/png', 0.92);
 	}
 
-	async function onIconFile(e: Event) {
-		const input = e.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
-		input.value = '';
-		if (!file) return;
+    async function onIconFile(e: Event) {
+        const input = e.currentTarget as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file) return;
 
-		if (!file.type.startsWith('image/')) {
-			dispatch('iconError', 'Selected file is not an image.');
-			return;
-		}
-		if (file.size > MAX_ICON_BYTES) {
-			dispatch('iconError', 'Image is too large. Max 200KB.');
-			return;
-		}
+        if (!file.type.startsWith('image/')) {
+            dispatch('iconError', 'Selected file is not an image.');
+            return;
+        }
+        if (file.size > MAX_ICON_BYTES) {
+            dispatch('iconError', 'Image is too large. Max 200KB.');
+            return;
+        }
 
-		try {
-			const dataUrl = await resizeImage(file);
-			setCustomIcon(link.id, dataUrl);
-			customIcon = dataUrl;
-			rebuildFavicon();
-		} catch {
-			dispatch('iconError', 'Failed to process image.');
-		}
-	}
+        try {
+            const dataUrl = await resizeImage(file);
+            await api.updateLink(link.id, {
+                name: link.name,
+                url: link.url,
+                description: link.description ?? undefined,
+                folderId: link.folderId ? Number(link.folderId) : null,
+                customIcon: dataUrl
+            });
+        } catch {
+            dispatch('iconError', 'Failed to process image.');
+        }
+        dispatch('iconUpdated');
+    }
 
-	function removeIcon() {
-		removeCustomIcon(link.id);
-		customIcon = null;
-		rebuildFavicon();
+	async function removeIcon() {
+        try {
+            await api.updateLink(link.id, {
+                name: link.name,
+                url: link.url,
+                description: link.description ?? undefined,
+                folderId: link.folderId ? Number(link.folderId) : null,
+                customIcon: null
+            });
+        } catch {
+            dispatch('iconError', 'Failed to remove custom icon.');
+        }
+        dispatch('iconUpdated');
+    }
+
+	function triggerIconPicker() {
+		fileInput?.click();
 	}
 
 	onMount(() => {
@@ -205,8 +211,6 @@
 <div
 	class="relative border border-cyan-500/25 rounded-lg bg-black/30 p-1.5 hover:border-cyan-300/60 transition overflow-visible"
 	bind:this={rootRef}
-	draggable="true"
-	ondragstart={onDragStart}
 >
 	<button
 		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none"
@@ -225,19 +229,16 @@
 			<button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); dispatch('details', link); }}>Open details</button>
 			<button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); dispatch('edit', link); }}>Edit</button>
 			<button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); dispatch('addToFolder', link); }}>Add to folder</button>
-            <button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); triggerIconPicker(); }}>Set custom icon</button>
-			
-			{#if customIcon}
-                <button
-                    class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded"
-                    onclick={() => {
-                        closeMenu();
-                        removeIcon();
-                    }}
-                >
-                    Remove custom icon
-                </button>
-            {/if}
+
+			<button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); triggerIconPicker(); }}>
+				Set custom icon
+			</button>
+
+			{#if link.customIcon}
+				<button class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded" onclick={() => { closeMenu(); removeIcon(); }}>
+					Remove custom icon
+				</button>
+			{/if}
 
 			{#if link.folderId}
 				<button class="w-full text-left px-2 py-1.5 hover:bg-red-500/15 text-red-300 rounded" onclick={() => { closeMenu(); dispatch('removeFromFolder', link); }}>
