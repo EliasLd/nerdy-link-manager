@@ -37,19 +37,25 @@
 </script>
 
 <div class="relative" bind:this={menuRef}>
-	<button
-		type="button"
-		class="btn-ghost min-w-20"
-		onclick={(e) => {
-			e.stopPropagation();
-			toggle();
-		}}
-		aria-haspopup="menu"
-		aria-expanded={open}
-	>
-		auth
-	</button>
-
+    <button
+        type="button"
+        class="btn-ghost !px-3 !py-2 sm:min-w-20 flex items-center justify-center gap-2"
+        onclick={(e) => {
+            e.stopPropagation();
+            toggle();
+        }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Auth menu"
+    >
+        <span class="hidden sm:inline">auth</span>
+        <span class="sm:hidden inline-flex">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true">
+                <path d="M3 3h12a2 2 0 0 1 2 2v5h-2V5H5v14h10v-3h2v3a2 2 0 0 1-2 2H3V3z"/>
+                <path d="M14 12l-2 2 2 2v-1h6v-2h-6v-1z"/>
+            </svg>
+        </span>
+    </button>
 	{#if open}
 		<div
 			class="absolute right-0 mt-2 w-56 rounded-xl border border-cyan-500/30 bg-gray-950/95 backdrop-blur p-2 z-50
