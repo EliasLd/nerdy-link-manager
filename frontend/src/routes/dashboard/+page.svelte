@@ -13,8 +13,10 @@
 	import FolderCard from '$lib/components/FolderCard.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import AuthMenu from '$lib/components/AuthMenu.svelte';
+	import SearchBar from '$lib/components/SearchBar.svelte';
 
 	let links = $state<LinkItem[]>([]);
+    let allLinks = $state<LinkItem[]>([]);
 	let folders = $state<FolderItem[]>([]);
 	let loading = $state(true);
 	let error = $state('');
@@ -44,28 +46,31 @@
 		await loadAll();
 	});
 
-	async function loadAll(folderId?: string | null) {
-		loading = true;
-		error = '';
-		try {
-			const [allLinks, allFolders] = await Promise.all([
-				api.getLinks(true, folderId ?? undefined),
-				api.getFolders()
-			]);
+    async function loadAll(folderId?: string | null) {
+        loading = true;
+        error = '';
 
-			folders = allFolders;
-			links = allLinks;
+        try {
+            const [folderLinks, allFolders, globalLinks] = await Promise.all([
+                api.getLinks(true, folderId ?? undefined),
+                api.getFolders(),
+                api.getLinks(true)
+            ]);
 
-			// si aucun folder sélectionné => afficher seulement ceux sans folder
-			visibleLinks = folderId
-				? allLinks
-				: allLinks.filter((l) => !l.folderId);
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load data';
-		} finally {
-			loading = false;
-		}
-	}
+            folders = allFolders;
+            links = folderLinks;
+            allLinks = globalLinks;
+
+            visibleLinks = folderId
+                ? folderLinks
+                : folderLinks.filter((l) => !l.folderId);
+
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to load data';
+        } finally {
+            loading = false;
+        }
+    }
 
 	async function openLink(link: LinkItem) {
 		try {
@@ -315,6 +320,11 @@
             ← All links
         </button>    
     {/if}
+
+    <SearchBar
+        links={allLinks}
+        on:select={(e) => openLink(e.detail)}
+    />
 
 	{#if loading}
 		<p class="text-gray-400">Loading...</p>
