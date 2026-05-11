@@ -135,34 +135,41 @@
 	}
 
 	async function editLink(e: CustomEvent<UpdateLinkPayload>) {
-		if (!selectedLink) return;
-		try {
-			await api.updateLink(selectedLink.id, e.detail);
-			showEditModal = false;
-			showDetailsModal = false;
-			selectedLink = null;
-			await loadAll(selectedFolder?.id ?? null);
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to update link';
-		}
-	}
+        if (!selectedLink) return;
+        try {
+            await api.updateLink(selectedLink.id, {
+                ...e.detail,
+                folderId: selectedLink.folderId ? Number(selectedLink.folderId) : null,
+                customIcon: selectedLink.customIcon ?? null,
+                faviconUrl: selectedLink.faviconUrl ?? null
+            });
+            showEditModal = false;
+            showDetailsModal = false;
+            selectedLink = null;
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to update link';
+        }
+    }
 
 	async function assignFolder(folderId: string | null) {
-		if (!selectedLink) return;
-		try {
-			await api.updateLink(selectedLink.id, {
-				name: selectedLink.name,
-				url: selectedLink.url,
-				description: selectedLink.description ?? undefined,
-				folderId: folderId ? Number(folderId) : null
-			});
-			showAddToFolder = false;
-			selectedLink = null;
-			await loadAll(selectedFolder?.id ?? null);
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to update link folder';
-		}
-	}
+        if (!selectedLink) return;
+        try {
+            await api.updateLink(selectedLink.id, {
+                name: selectedLink.name,
+                url: selectedLink.url,
+                description: selectedLink.description ?? undefined,
+                folderId: folderId ? Number(folderId) : null,
+                customIcon: selectedLink.customIcon ?? null,
+                faviconUrl: selectedLink.faviconUrl ?? null
+            });
+            showAddToFolder = false;
+            selectedLink = null;
+            await loadAll(selectedFolder?.id ?? null);
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to update link folder';
+        }
+    }
 
 	async function deleteLink() {
 		if (!selectedLink) return;
@@ -250,8 +257,10 @@
                 name: link.name,
                 url: link.url,
                 description: link.description ?? undefined,
-                folderId: Number(folder.id)
-            });
+                folderId: Number(folder.id),
+                customIcon: link.customIcon ?? null,
+                faviconUrl: link.faviconUrl ?? null
+            });            
             await loadAll(selectedFolder?.id ?? null);
         } catch (err) {
             error = err instanceof Error ? err.message : 'Failed to move link to folder';
@@ -282,12 +291,14 @@
 
         try {
             await api.updateLink(link.id, {
-                name: link.name,
-                url: link.url,
-                description: link.description ?? undefined,
-                folderId: null
-            });
-            await loadAll(selectedFolder?.id ?? null);
+            name: link.name,
+            url: link.url,
+            description: link.description ?? undefined,
+            folderId: null,
+            customIcon: link.customIcon ?? null,
+            faviconUrl: link.faviconUrl ?? null
+        });
+        await loadAll(selectedFolder?.id ?? null);
         } catch (err) {
             error = err instanceof Error ? err.message : 'Failed to move link to all links';
         }
