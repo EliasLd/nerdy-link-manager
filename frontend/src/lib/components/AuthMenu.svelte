@@ -76,6 +76,18 @@
 
 			<button
 				type="button"
+				class="w-full text-left px-3 py-2 rounded-lg text-gray-200 hover:bg-cyan-500/15 transition"
+				role="menuitem"
+				onclick={() => {
+					close();
+					dispatch('changePassword');
+				}}
+			>
+				Change password
+			</button>
+
+			<button
+				type="button"
 				class="w-full text-left px-3 py-2 rounded-lg text-red-300 hover:bg-red-500/15 transition"
 				role="menuitem"
 				onclick={() => {
