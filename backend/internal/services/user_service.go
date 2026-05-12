@@ -41,6 +41,28 @@ func (s *UserService) Authenticate(ctx context.Context, email, password string) 
 	return user, nil
 }
 
+func (s *UserService) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		return errors.New("invalid credentials")
+	}
+
+	if strings.TrimSpace(newPassword) == "" {
+		return errors.New("new password required")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.UpdatePasswordByID(ctx, userID, string(hash))
+}
+
 func (s *UserService) BootstrapInitialUser(ctx context.Context, email, password string) (bool, error) {
 	email = strings.TrimSpace(email)
 	password = strings.TrimSpace(password)

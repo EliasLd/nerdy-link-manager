@@ -17,6 +17,7 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id int64) (*User, error)
 	Count(ctx context.Context) (int64, error)
+	UpdatePasswordByID(ctx context.Context, id int64, passwordHash string) error
 }
 
 type sqliteUserRepository struct {
@@ -84,4 +85,14 @@ func (r *sqliteUserRepository) Count(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	return c, nil
+}
+
+func (r *sqliteUserRepository) UpdatePasswordByID(ctx context.Context, id int64, passwordHash string) error {
+	query := `
+		UPDATE users
+		SET password_hash = ?
+		WHERE id = ?
+	`
+	_, err := r.db.ExecContext(ctx, query, passwordHash, id)
+	return err
 }

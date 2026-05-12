@@ -23,6 +23,7 @@ func New(
 
 	// Protected auth routes
 	mux.Handle("POST /api/register", authMiddleware(http.HandlerFunc(authHandler.Register)))
+	mux.Handle("POST /api/change-password", authMiddleware(http.HandlerFunc(authHandler.ChangePassword)))
 
 	// link routes (protected)
 	mux.Handle("/api/links", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

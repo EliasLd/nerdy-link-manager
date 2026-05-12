@@ -86,6 +86,15 @@ export const api = {
       body: JSON.stringify({ email, password })
     }),
 
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/api/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword
+      })
+    }),
+
   getFolders: async (): Promise<FolderItem[]> => {
     const raw = await request<BackendFolder[]>('/api/folders');
     return raw.map(mapFolderFromBackend);
