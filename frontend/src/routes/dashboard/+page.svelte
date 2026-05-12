@@ -14,6 +14,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import AuthMenu from '$lib/components/AuthMenu.svelte';
 	import SearchBar from '$lib/components/SearchBar.svelte';
+	import ChangePasswordModal from '$lib/components/ChangePasswordModal.svelte';
 
 	let links = $state<LinkItem[]>([]);
     let allLinks = $state<LinkItem[]>([]);
@@ -28,6 +29,7 @@
 	let showDeleteModal = $state(false);
 	let showDetailsModal = $state(false);
 	let showAddToFolder = $state(false);
+	let showChangePassword = $state(false);
 
 	let selectedLink = $state<LinkItem | null>(null);
 	let selectedFolder = $state<FolderItem | null>(null);
@@ -247,6 +249,16 @@
 		await goto('/register');
 	}
 
+	async function handleChangePassword(e: CustomEvent<{ current: string; next: string }>) {
+		try {
+			await api.changePassword(e.detail.current, e.detail.next);
+			logout();
+			await goto('/auth');
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to change password';
+		}
+	}
+
     async function dropLinkOnFolder(e: CustomEvent<{ linkId: string; folder: FolderItem }>) {
         const { linkId, folder } = e.detail;
         const link = links.find((l) => l.id === linkId);
@@ -316,8 +328,19 @@
 
 		<div class="flex items-center gap-2">
 			<button class="btn-primary !px-3 !py-2 font-bold leading-none" onclick={openAddMenu}>+</button>
-			<AuthMenu on:logout={doLogout} on:register={goToRegister} />
-		</div>
+			<AuthMenu
+                on:logout={doLogout}
+                on:register={goToRegister}
+                on:changePassword={() => (showChangePassword = true)}
+            />
+
+            {#if showChangePassword}
+                <ChangePasswordModal
+                    on:close={() => (showChangePassword = false)}
+                    on:submit={handleChangePassword}
+                />
+            {/if}		
+        </div>
 	</header>
 
 	{#if selectedFolder}
