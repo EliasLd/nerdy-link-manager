@@ -123,6 +123,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to create link';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -133,6 +134,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to create folder';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -151,6 +153,7 @@
             await loadAll(selectedFolder?.id ?? null);
         } catch (e) {
             error = e instanceof Error ? e.message : 'Failed to update link';
+            setTimeout(() => (error = ''), 4000);
         }
     }
 
@@ -170,6 +173,7 @@
             await loadAll(selectedFolder?.id ?? null);
         } catch (e) {
             error = e instanceof Error ? e.message : 'Failed to update link folder';
+            setTimeout(() => (error = ''), 4000);
         }
     }
 
@@ -183,6 +187,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to delete link';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -205,6 +210,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to rename folder';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -223,6 +229,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to delete folder';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -237,6 +244,7 @@
 			await loadAll(selectedFolder?.id ?? null);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to remove from folder';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -256,6 +264,7 @@
 			await goto('/auth');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to change password';
+            setTimeout(() => (error = ''), 4000);
 		}
 	}
 
@@ -276,6 +285,7 @@
             await loadAll(selectedFolder?.id ?? null);
         } catch (err) {
             error = err instanceof Error ? err.message : 'Failed to move link to folder';
+            setTimeout(() => (error = ''), 4000);
         }
     }
 
@@ -313,6 +323,7 @@
         await loadAll(selectedFolder?.id ?? null);
         } catch (err) {
             error = err instanceof Error ? err.message : 'Failed to move link to all links';
+            setTimeout(() => (error = ''), 4000);
         }
     }
 </script>
@@ -360,10 +371,22 @@
         on:select={(e) => openLink(e.detail)}
     />
 
+    {#if error}
+        <div class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 px-4 py-3 flex items-start gap-3 w-sm">
+            <div class="flex-1 text-sm">{error}</div>
+            <button
+                type="button"
+                class="text-red-300 hover:text-red-200 transition"
+                onclick={() => (error = '')}
+                aria-label="Dismiss error"
+            >
+                ✕
+            </button>
+        </div>
+    {/if}
+
 	{#if loading}
 		<p class="text-gray-400">Loading...</p>
-	{:else if error}
-		<p class="text-red-400">{error}</p>
 	{:else}
 		<div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
 			{#if selectedFolder}
