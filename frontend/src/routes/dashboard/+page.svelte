@@ -354,22 +354,37 @@
         </div>
 	</header>
 
-	{#if selectedFolder}
-        <button
-            class={`btn-ghost mb-4 transition ${allLinksDragOver ? 'border-cyan-300/80 bg-cyan-500/10 text-cyan-200' : ''}`}
-            onclick={clearFolderFilter}
-            ondragover={onAllLinksDragOver}
-            ondragleave={onAllLinksDragLeave}
-            ondrop={onAllLinksDrop}
-        >
-            ← All links
-        </button>    
-    {/if}
+    {#if selectedFolder}
+        <div class="mb-5 grid items-center gap-3 md:grid-cols-[auto_1fr_auto]">
+            <button
+                class={`btn-ghost transition ${allLinksDragOver ? 'border-cyan-300/80 bg-cyan-500/10 text-cyan-200' : ''}`}
+                onclick={clearFolderFilter}
+                ondragover={onAllLinksDragOver}
+                ondragleave={onAllLinksDragLeave}
+                ondrop={onAllLinksDrop}
+            >
+                ← All links
+            </button>
 
-    <SearchBar
-        links={allLinks}
-        on:select={(e) => openLink(e.detail)}
-    />
+            <div class="flex justify-center">
+                <SearchBar
+                    links={allLinks}
+                    folders={folders}
+                    on:select={(e) => openLink(e.detail)}
+                />
+            </div>
+
+            <div class="hidden md:block min-w-[110px]"></div>
+        </div>
+    {:else}
+        <div class="mb-5 flex justify-center">
+            <SearchBar
+                links={allLinks}
+                folders={folders}
+                on:select={(e) => openLink(e.detail)}
+            />
+        </div>
+    {/if}
 
     {#if error}
         <div class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 px-4 py-3 flex items-start gap-3 w-sm">
