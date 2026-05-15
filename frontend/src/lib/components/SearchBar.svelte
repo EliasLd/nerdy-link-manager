@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import type { LinkItem } from '$lib/types';
+	import type { LinkItem, FolderItem } from '$lib/types';
 	import { getFaviconCandidates } from '$lib/favicon';
 
 	type MatchSegment = { text: string; match: boolean };
@@ -10,15 +10,22 @@
 		nameSegments: MatchSegment[];
 		descSegments: MatchSegment[];
 		score: number;
+		folderName?: string;
 	};
 
-	let { links = [] as LinkItem[] } = $props();
+	let { links = [] as LinkItem[], folders = [] as FolderItem[] } = $props();
 
 	const dispatch = createEventDispatcher<{ select: LinkItem }>();
 
 	let query = $state('');
 	let open = $state(false);
 	let inputRef: HTMLInputElement | null = null;
+
+	const folderMap = $derived.by(() => {
+		const map = new Map<string, string>();
+		for (const f of folders) map.set(f.id, f.name);
+		return map;
+	});
 
 	onMount(() => {
 		const onKeydown = (e: KeyboardEvent) => {
@@ -169,7 +176,8 @@
 								descMatch?.indices ?? []
 							)
 						: [],
-					score
+					score,
+					folderName: link.folderId ? folderMap.get(link.folderId) : undefined
 				});
 			}
 		}
@@ -180,7 +188,7 @@
 	});
 </script>
 
-<div class="relative z-40 mb-5 max-w-xl">
+<div class="relative z-40 w-full max-w-xl">
 	<div class={`relative transition ${open ? 'scale-[1.02]' : ''}`}>
 		<span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
 			<svg
@@ -254,8 +262,14 @@
 							{/each}
 						</div>
 
-						{#if result.link.description}
-							<div class="text-xs text-gray-400 truncate">
+						<div class="text-xs text-gray-400 truncate">
+							{#if result.folderName}
+								<span class="text-cyan-400/70 tracking-wide">{result.folderName}</span>
+                                {#if result.link.description}
+                                    <span> - </span>
+                                {/if}
+							{/if}
+							{#if result.link.description}
 								{#each result.descSegments as segment}
 									<span
 										class={segment.match
@@ -265,8 +279,8 @@
 										{segment.text}
 									</span>
 								{/each}
-							</div>
-						{/if}
+							{/if}
+						</div>
 					</div>
 				</button>
 			{/each}
