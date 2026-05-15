@@ -15,6 +15,7 @@
 	import AuthMenu from '$lib/components/AuthMenu.svelte';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import ChangePasswordModal from '$lib/components/ChangePasswordModal.svelte';
+    import Clock from '$lib/components/Clock.svelte';
 
 	let links = $state<LinkItem[]>([]);
     let allLinks = $state<LinkItem[]>([]);
@@ -329,30 +330,26 @@
 </script>
 
 <main class="min-h-screen px-4 py-8 max-w-5xl mx-auto">
-	<header class="flex items-start justify-between gap-3 mb-6">
-		<div class="min-w-0">
-			<h1 class="text-3xl font-bold text-cyan-300">[ dashboard ]</h1>
-			<p class="text-gray-400 text-sm">
-				{selectedFolder ? `folder://${selectedFolder.name}` : 'read://links'}
-			</p>
-		</div>
-
-		<div class="flex items-center gap-2">
-			<button class="btn-primary !px-3 !py-2 font-bold leading-none" onclick={openAddMenu}>+</button>
-			<AuthMenu
-                on:logout={doLogout}
-                on:register={goToRegister}
-                on:changePassword={() => (showChangePassword = true)}
-            />
-
-            {#if showChangePassword}
-                <ChangePasswordModal
-                    on:close={() => (showChangePassword = false)}
-                    on:submit={handleChangePassword}
-                />
-            {/if}		
+    <header class="flex items-center justify-between gap-3 mb-6">
+        <div class="min-w-0">
+            <p class="text-gray-400 text-md md:text-xl font-bold">
+                {selectedFolder ? `folder://${selectedFolder.name}` : 'read://links'}
+            </p>
         </div>
-	</header>
+
+        <div class="hidden md:flex flex-1 justify-center">
+            <Clock />
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button class="btn-primary !px-3 !py-2 font-bold leading-none" onclick={openAddMenu}>+</button>
+            <AuthMenu on:logout={doLogout} on:register={goToRegister} on:changePassword={() => (showChangePassword = true)} />
+        </div>
+    </header>
+
+    <div class="md:hidden mb-3 text-center">
+        <Clock />
+    </div>
 
     {#if selectedFolder}
         <div class="mb-5 grid items-center gap-3 md:grid-cols-[auto_1fr_auto]">
