@@ -215,13 +215,17 @@
 <input type="file" accept="image/*" class="hidden" bind:this={fileInput} onchange={onIconFile} />
 
 <div
-	class="relative border border-cyan-500/25 rounded-lg bg-black/30 p-1.5 hover:border-cyan-300/60 transition overflow-visible"
-	bind:this={rootRef}
+	class="cursor-pointer relative rounded-2xl border bg-black/30 p-1.5 transition-all duration-300 ease-out overflow-visible
+    shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_18px_rgba(34,211,238,0.08)]
+    hover:shadow-[0_0_0_1px_rgba(34,211,238,0.45),0_0_26px_rgba(34,211,238,0.35)]
+    hover:-translate-y-0.5 hover:scale-[1.02]
+    border-cyan-500/25 hover:border-cyan-300/70"
+    bind:this={rootRef}
 	draggable="true"
 	ondragstart={onDragStart}
 >	
     <button
-		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none"
+		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-lg leading-none cursor-pointer"
 		onclick={toggleMenu}
 		aria-label="Open actions menu"
 	>
@@ -231,7 +235,7 @@
 	{#if menuOpen}
 		<div
 			bind:this={menuRef}
-			class="absolute z-[60] w-44 rounded-lg border border-cyan-500/30 bg-gray-950/95 p-1 shadow-xl"
+			class="absolute z-[60] w-44 rounded-lg border border-cyan-500/30 bg-gray-950/95 p-1 shadow-xl cursor-pointer"
 			style={menuStyle}
 		>
 			<button class="w-full text-left px-2 py-1.5 hover:bg-cyan-500/15 rounded" onclick={() => { closeMenu(); dispatch('details', link); }}>Open details</button>
@@ -260,7 +264,7 @@
 		</div>
 	{/if}
 
-	<button class="w-full aspect-square grid place-items-center" onclick={() => dispatch('open', link)}>
+	<button class="w-full aspect-square grid place-items-center cursor-pointer" onclick={() => dispatch('open', link)}>
 		{#if faviconSrc}
 			<img
 				src={faviconSrc}
