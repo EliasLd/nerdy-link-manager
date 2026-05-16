@@ -18,6 +18,6 @@
 	});
 </script>
 
-<div class="font-mono text-cyan-300/90 text-lg md:text-2xl font-semibold tracking-wide">
+<div class="font-mono text-cyan-300/90 text-xl md:text-3xl font-semibold tracking-wide">
 	{time}
 </div>
