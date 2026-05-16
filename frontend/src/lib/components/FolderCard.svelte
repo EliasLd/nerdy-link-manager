@@ -84,10 +84,12 @@
 </script>
 
 <div
-	class={`relative border rounded-lg bg-black/30 p-1.5 transition overflow-visible ${
-		dragOver ? 'border-cyan-300/80 bg-cyan-500/10' : 'border-cyan-500/25 hover:border-cyan-300/60'
-	}`}
-	role="button"
+class={`cursor-pointer relative rounded-2xl border bg-black/30 p-1.5 transition-all duration-300 ease-out overflow-visible
+	shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_18px_rgba(34,211,238,0.08)]
+	hover:shadow-[0_0_0_1px_rgba(34,211,238,0.45),0_0_26px_rgba(34,211,238,0.35)]
+	hover:-translate-y-0.5 hover:scale-[1.02]
+	${dragOver ? 'border-cyan-300/80 bg-cyan-500/10' : 'border-cyan-500/25 hover:border-cyan-300/70'}`}
+    role="button"
 	tabindex="0"
 	bind:this={rootRef}
 	onclick={() => dispatch('open', folder)}
@@ -96,7 +98,7 @@
 	ondrop={onDrop}
 >	
     <button
-		class="absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-sm leading-none"
+		class="cursor-pointer absolute top-1.5 right-1.5 text-gray-400 hover:text-cyan-300 transition text-sm leading-none"
 		onclick={(e) => { e.stopPropagation(); toggleMenu(); }}
 		aria-label="Open folder menu"
 	>

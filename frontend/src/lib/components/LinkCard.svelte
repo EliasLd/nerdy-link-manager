@@ -23,7 +23,7 @@
 <div
 	role="button"
 	tabindex="0"
-	class="group border border-cyan-500/25 rounded-xl px-4 py-3 bg-black/30 cursor-pointer
+	class="cursor-pointer group border border-cyan-500/25 rounded-xl px-4 py-3 bg-black/30
 	transition-all duration-300 ease-out hover:border-cyan-300/70 hover:bg-black/40
 	grid grid-rows-[1fr_auto] gap-3 min-h-[120px] overflow-hidden"
 	onclick={handleCardClick}
