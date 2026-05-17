@@ -218,7 +218,6 @@
 	class="cursor-pointer relative rounded-2xl border bg-black/30 p-1.5 transition-all duration-300 ease-out overflow-visible
     shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_18px_rgba(34,211,238,0.08)]
     hover:shadow-[0_0_0_1px_rgba(34,211,238,0.45),0_0_26px_rgba(34,211,238,0.35)]
-    hover:-translate-y-0.5 hover:scale-[1.02]
     border-cyan-500/25 hover:border-cyan-300/70"
     bind:this={rootRef}
 	draggable="true"
