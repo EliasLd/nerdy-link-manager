@@ -41,13 +41,66 @@
 
 	let visibleLinks = $state<LinkItem[]>([]);
 
-	onMount(async () => {
-		if (!isAuthenticated()) {
-			await goto('/auth');
-			return;
-		}
-		await loadAll();
-	});
+    onMount(async () => {
+        if (!isAuthenticated()) {
+            await goto('/auth');
+            return;
+        }
+        await loadAll();
+
+        const onKeydown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in an input/textarea/contenteditable
+            if (isEditableTarget(e.target)) return;
+
+            // If another modal/dialog is open, ignore shortcuts (optional but safer)
+            if (
+                showCreateModal ||
+                showFolderModal ||
+                showEditModal ||
+                showDetailsModal ||
+                showDeleteModal ||
+                showAddToFolder ||
+                showRenameFolderModal ||
+                showDeleteFolderModal ||
+                showChangePassword
+            ) {
+                return;
+            }
+
+            // If AddMenu is open: handle L/F/Escape
+            if (showAddMenu) {
+                const k = e.key.toLowerCase();
+
+                if (k === 'escape') {
+                    e.preventDefault();
+                    showAddMenu = false;
+                    return;
+                }
+                if (k === 'l') {
+                    e.preventDefault();
+                    showAddMenu = false;
+                    showCreateModal = true;
+                    return;
+                }
+                if (k === 'f') {
+                    e.preventDefault();
+                    showAddMenu = false;
+                    showFolderModal = true;
+                    return;
+                }
+                return;
+            }
+
+            // Open AddMenu with "a"
+            if (e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                showAddMenu = true;
+            }
+        };
+
+        document.addEventListener('keydown', onKeydown);
+        return () => document.removeEventListener('keydown', onKeydown);
+    });
 
     async function loadAll(folderId?: string | null) {
         loading = true;
@@ -86,6 +139,16 @@
 	function openAddMenu() { showAddMenu = true; }
 	function openCreate() { showCreateModal = true; }
 	function openFolderCreate() { showFolderModal = true; }
+
+    function isEditableTarget(target: EventTarget | null) {
+        const el = target as HTMLElement | null;
+        return !!(
+            el &&
+            (el.tagName === 'INPUT' ||
+                el.tagName === 'TEXTAREA' ||
+                (el as HTMLElement).isContentEditable)
+        );
+    }
 
 	function openDetails(link: LinkItem) {
 		selectedLink = link;
