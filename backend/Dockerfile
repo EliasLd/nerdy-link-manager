@@ -14,7 +14,7 @@ RUN go mod download
 COPY . ./
 
 # Build binary
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -o app ./cmd/main.go
+RUN CGO_ENABLED=1 go build -o app ./cmd/main.go
 
 # ----------- Runtime stage -----------
 FROM debian:bookworm-slim
