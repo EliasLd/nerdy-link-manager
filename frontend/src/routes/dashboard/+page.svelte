@@ -414,6 +414,13 @@
         <Clock />
     </div>
 
+    {#if showChangePassword}
+        <ChangePasswordModal
+            on:close={() => (showChangePassword = false)}
+            on:submit={handleChangePassword}
+        />
+    {/if}
+
     {#if selectedFolder}
         <div class="mb-5 grid items-center gap-3 md:grid-cols-[auto_1fr_auto]">
             <button
