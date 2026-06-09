@@ -11,6 +11,7 @@
 
 	let name = $state(initial?.name ?? '');
 	let error = $state('');
+    let nameInput: HTMLInputElement;
 
 	function close() { dispatch('close'); }
 	function submit() {
@@ -25,8 +26,11 @@
 	function onEscape(e: KeyboardEvent) { if (e.key === 'Escape') close(); }
 
 	onMount(() => {
+        nameInput?.focus();
 		document.addEventListener('keydown', onEscape);
-		return () => document.removeEventListener('keydown', onEscape);
+		return () => {
+            document.removeEventListener('keydown', onEscape);
+        };
 	});
 </script>
 
@@ -40,7 +44,7 @@
 		</p>
 
 		<div class="space-y-3">
-			<input class="w-full input-nerd" placeholder="Folder name" bind:value={name} />
+			<input bind:this={nameInput} class="w-full input-nerd" placeholder="Folder name" bind:value={name} />
 		</div>
 
 		{#if error}<p class="text-red-400 text-sm mt-3">{error}</p>{/if}
