@@ -16,6 +16,7 @@
 	let url = $state(initial?.url ?? '');
 	let description = $state(initial?.description ?? '');
 	let error = $state('');
+    let nameInput: HTMLInputElement;
 
 	function close() {
 		dispatch('close');
@@ -48,9 +49,14 @@
 	}
 
 	onMount(() => {
-		document.addEventListener('keydown', onEscape);
-		return () => document.removeEventListener('keydown', onEscape);
-	});
+        nameInput?.focus();
+
+        document.addEventListener('keydown', onEscape);
+
+        return () => {
+            document.removeEventListener('keydown', onEscape);
+        };
+    });
 </script>
 
 <div class="fixed inset-0 z-50 bg-black/55 backdrop-blur-[1px] grid place-items-center px-4" onclick={onBackdropClick}>
@@ -63,7 +69,7 @@
 		</p>
 
 		<div class="space-y-3">
-			<input class="w-full input-nerd" placeholder="name" bind:value={name} />
+			<input bind:this={nameInput} class="w-full input-nerd" placeholder="name" bind:value={name} />
 			<input class="w-full input-nerd" placeholder="https://example.com" bind:value={url} />
 			<textarea class="w-full input-nerd min-h-24" placeholder="description (optional)" bind:value={description}></textarea>
 		</div>
