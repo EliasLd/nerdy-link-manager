@@ -2,6 +2,8 @@
 
 A self-hostable, lightweight, and flexible personal link manager built with Go and Svelte.
 
+![presentation GIF](./assets/showcase.gif)
+
 ## Features
 
 - Link management: create, edit, delete, and open links
